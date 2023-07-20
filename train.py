@@ -3,11 +3,10 @@
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 import torch.optim as optim
 
-from dcgan.model import Generator, Discriminator
-from dcgan.celeba import get_celeba_dataloader
+from model import Generator, Discriminator
+from celeba import get_celeba_dataloader
 from image_utils import batched_image_to_grid, save_image, get_image_dataset_mean_and_std
 
 CUDA = torch.cuda.is_available()
