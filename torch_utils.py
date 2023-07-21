@@ -11,6 +11,5 @@ def get_device():
 
 
 def save_parameters(model, save_path):
-    Path(save_path).mkdir(parents=True, exist_ok=True)
-    print(str(save_path))
+    Path(save_path).parent.mkdir(parents=True, exist_ok=True)
     torch.save(model.state_dict(), str(save_path))
