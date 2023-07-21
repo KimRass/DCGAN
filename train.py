@@ -10,6 +10,7 @@ from model import Generator, Discriminator
 from celeba import get_celeba_dataloader
 from image_utils import batched_image_to_grid, save_image, get_image_dataset_mean_and_std
 from torch_utils import get_device, save_parameters
+print(f"""{Path(__file__).parent}/parameters/epoch_{epoch}_batch_{batch}.pth""")
 
 IMG_SIZE = 64
 # All models were trained with mini-batch stochastic gradient descent (SGD) with a mini-batch size of 128."
@@ -91,5 +92,5 @@ for epoch in range(1, N_EPOCHS + 1):
             save_image(grid, path=f"""./examples/epoch_{epoch}_batch_{batch}.jpg""")
 
             save_parameters(
-                model=gen, save_path=f"""{Path(__file__).parent}/parameters/epoch_{epoch}_batch_{batch}.pt"""
+                model=gen, save_path=f"""{Path(__file__).parent}/parameters/epoch_{epoch}_batch_{batch}.pth"""
             )
