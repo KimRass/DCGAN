@@ -20,10 +20,6 @@ N_WORKERS = 4
 DEVICE = get_device()
 gen = Generator().to(DEVICE)
 disc = Discriminator().to(DEVICE)
-save_parameters(
-    model=gen,
-    save_path=f"""{Path(__file__).parent}/parameters/test.pth"""
-)
 
 # "We used the Adam optimizer with tuned hyperparameters. We used 0.0002 for learning rate. We found
 # reducing $\beta_{1}$ to 0.5 helped stabilize training."
@@ -92,9 +88,9 @@ for epoch in range(1, N_EPOCHS + 1):
         if batch == len(dl):
             fake_image = fake_image.detach().cpu()
             grid = batched_image_to_grid(fake_image[: 64, ...], n_cols=8, mean=mean, std=std)
-            save_image(grid, path=f"""./examples/epoch_{epoch}_batch_{batch}.jpg""")
+            save_image(grid, path=f"""{Path(__file__).parent}/examples/epoch_{epoch}_batch_{batch}.jpg""")
 
             save_parameters(
                 model=gen,
-                save_path=f"""{Path(__file__).resolve().parent}/parameters/epoch_{epoch}_batch_{batch}.pth"""
+                save_path=f"""{Path(__file__).parent}/parameters/epoch_{epoch}_batch_{batch}.pth"""
             )
