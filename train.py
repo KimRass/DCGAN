@@ -23,10 +23,12 @@ save_parameters(
     model=gen,
     save_path=f"""{Path(__file__).resolve().parent}/parameters/text.pth"""
 )
+print("a")
 save_parameters(
     model=gen,
     save_path=f""".{Path(__file__).parent}/parameters/text.pth"""
 )
+print("b")
 disc = Discriminator().to(DEVICE)
 
 # "We used the Adam optimizer with tuned hyperparameters. We used 0.0002 for learning rate. We found
