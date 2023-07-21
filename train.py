@@ -4,6 +4,7 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from pathlib import Path
 
 from model import Generator, Discriminator
 from celeba import get_celeba_dataloader
@@ -89,4 +90,6 @@ for epoch in range(1, N_EPOCHS + 1):
             grid = batched_image_to_grid(fake_image[: 64, ...], n_cols=8, mean=mean, std=std)
             save_image(grid, path=f"""./examples/epoch_{epoch}_batch_{batch}.jpg""")
 
-            save_parameters(model=gen, save_path=f"""./parameters/epoch_{epoch}_batch_{batch}.pth""")
+            save_parameters(
+                model=gen, save_path=f"""{Path(__file__).parent}/parameters/epoch_{epoch}_batch_{batch}.pt"""
+            )
