@@ -5,8 +5,6 @@ from pathlib import Path
 def get_device():
     if torch.cuda.is_available():
         device = torch.device("cuda")
-        gen = gen.to(device)
-        disc = disc.to(device)
     else:
         device = torch.device("cpu")
     return device
