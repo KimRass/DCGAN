@@ -19,17 +19,7 @@ N_WORKERS = 4
 
 DEVICE = get_device()
 gen = Generator().to(DEVICE)
-save_parameters(
-    model=gen,
-    save_path=f"""/home/ubuntu/project/dcgan_from_scratch/parameters/text.pth"""
-)
-print("a")
-save_parameters(
-    model=gen,
-    save_path=f""".{Path(__file__).parent}/parameters/text.pth"""
-)
-print("b")
-disc = Discriminator().to(DEVICE)
+torch.save(gen.state_dict(), f"""/home/ubuntu/project/dcgan_from_scratch/parameters/text.pth""")
 
 # "We used the Adam optimizer with tuned hyperparameters. We used 0.0002 for learning rate. We found
 # reducing $\beta_{1}$ to 0.5 helped stabilize training."
