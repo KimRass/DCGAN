@@ -21,7 +21,7 @@ DEVICE = get_device()
 gen = Generator().to(DEVICE)
 save_parameters(
     model=gen,
-    save_path=f"""{Path(__file__).resolve().parent}/parameters/text.pth"""
+    save_path=f"""/home/ubuntu/project/dcgan_from_scratch/parameters/text.pth"""
 )
 print("a")
 save_parameters(
