@@ -19,6 +19,14 @@ N_WORKERS = 4
 
 DEVICE = get_device()
 gen = Generator().to(DEVICE)
+save_parameters(
+    model=gen,
+    save_path=f"""{Path(__file__).resolve().parent}/parameters/text.pth"""
+)
+save_parameters(
+    model=gen,
+    save_path=f""".{Path(__file__).parent}/parameters/text.pth"""
+)
 disc = Discriminator().to(DEVICE)
 
 # "We used the Adam optimizer with tuned hyperparameters. We used 0.0002 for learning rate. We found
