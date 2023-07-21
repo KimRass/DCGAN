@@ -8,8 +8,7 @@ import torch.optim as optim
 from model import Generator, Discriminator
 from celeba import get_celeba_dataloader
 from image_utils import batched_image_to_grid, save_image, get_image_dataset_mean_and_std
-
-CUDA = torch.cuda.is_available()
+from torch_utils import get_device, save_parameters
 
 IMG_SIZE = 64
 # All models were trained with mini-batch stochastic gradient descent (SGD) with a mini-batch size of 128."
@@ -17,14 +16,9 @@ IMG_SIZE = 64
 BATCH_SIZE = 256
 N_WORKERS = 4
 
-gen = Generator()
-disc = Discriminator()
-if CUDA:
-    DEVICE = torch.device("cuda")
-    gen = gen.to(DEVICE)
-    disc = disc.cuda()
-else:
-    DEVICE = torch.device("cpu")
+DEVICE = get_device()
+gen = Generator().to(DEVICE)
+disc = Discriminator().to(DEVICE)
 
 # "We used the Adam optimizer with tuned hyperparameters. We used 0.0002 for learning rate. We found
 # reducing $\beta_{1}$ to 0.5 helped stabilize training."
@@ -35,6 +29,7 @@ gen_optim = optim.Adam(params=gen.parameters(), lr=LR, betas=(beta1, 0.999))
 
 
 root = "/home/ubuntu/project/celeba"
+# root = "/Users/jongbeomkim/Documents/datasets/celeba"
 # mean, std = get_image_dataset_mean_and_std(root)
 mean = (0.506, 0.425, 0.383)
 std = (0.311, 0.291, 0.289)
@@ -47,8 +42,7 @@ disc_losses = list()
 gen_losses = list()
 for epoch in range(1, N_EPOCHS + 1):
     for batch, (real_image, _) in enumerate(dl, start=1):
-        if CUDA:
-            real_image = real_image.cuda()
+        real_image = real_image.to(DEVICE)
 
         ### Update D
         disc_optim.zero_grad()
@@ -94,3 +88,5 @@ for epoch in range(1, N_EPOCHS + 1):
             fake_image = fake_image.detach().cpu()
             grid = batched_image_to_grid(fake_image[: 64, ...], n_cols=8, mean=mean, std=std)
             save_image(grid, path=f"""./examples/epoch_{epoch}_batch_{batch}.jpg""")
+
+            save_parameters(model=gen, save_path=f"""./parameters/epoch_{epoch}_batch_{batch}.pth""")
