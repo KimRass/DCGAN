@@ -3,7 +3,7 @@
 
 import torch
 import torch.nn as nn
-import torch.optim as optim
+from torch.optim import Adam
 from pathlib import Path
 
 from model import Generator, Discriminator
@@ -13,8 +13,7 @@ from torch_utils import get_device, save_parameters
 
 IMG_SIZE = 64
 # All models were trained with mini-batch stochastic gradient descent (SGD) with a mini-batch size of 128."
-# BATCH_SIZE = 128
-BATCH_SIZE = 256
+BATCH_SIZE = 128
 N_WORKERS = 4
 
 DEVICE = get_device()
@@ -25,8 +24,8 @@ disc = Discriminator().to(DEVICE)
 # reducing $\beta_{1}$ to 0.5 helped stabilize training."
 LR = 0.0002
 beta1 = 0.5
-disc_optim = optim.Adam(params=disc.parameters(), lr=LR, betas=(beta1, 0.999))
-gen_optim = optim.Adam(params=gen.parameters(), lr=LR, betas=(beta1, 0.999))
+disc_optim = Adam(params=disc.parameters(), lr=LR, betas=(beta1, 0.999))
+gen_optim = Adam(params=gen.parameters(), lr=LR, betas=(beta1, 0.999))
 
 
 root = "/home/ubuntu/project/celeba"

@@ -7,8 +7,8 @@ import matplotlib.animation as animation
 from IPython.display import HTML
 import cv2
 from PIL import Image
-from pathlib import Path
 from moviepy.video.io.bindings import mplfig_to_npimage
+from pathlib import Path
 from tqdm.auto import tqdm
 
 
