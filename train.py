@@ -48,8 +48,7 @@ for epoch in range(1, N_EPOCHS + 1):
         disc_optim.zero_grad()
 
         real_pred = disc(real_image) # $D(x)$
-        real_label = torch.ones_like(real_pred, device=DEVICE)
-        real_label = real_label.detach()
+        real_label = torch.ones_like(real_pred, device=DEVICE).detach()
         real_disc_loss = crit(real_pred, real_label) # $\log(D(x))$ # D 입장에서는 Loss가 낮아져야 함.
 
         noise = torch.randn(BATCH_SIZE, 100, device=DEVICE) # $z$
@@ -57,8 +56,7 @@ for epoch in range(1, N_EPOCHS + 1):
         fake_image = gen(noise) # $G(z)$
         # D를 업데이트하는 동안에는 G는 업데이트하지 않으므로 `fake_image`에 대한 미분 계산을 하지 않아도 됩니다!
         fake_pred = disc(fake_image.detach()) # $D(G(z))$
-        fake_label = torch.zeros_like(fake_pred, device=DEVICE)
-        fake_label = fake_label.detach()
+        fake_label = torch.zeros_like(fake_pred, device=DEVICE).detach()
         fake_disc_loss = crit(fake_pred, fake_label) # $\log(1 - D(G(z)))$ # D 입장에서는 Loss가 낮아져야 함.
 
         disc_loss = real_disc_loss + fake_disc_loss
@@ -82,7 +80,8 @@ for epoch in range(1, N_EPOCHS + 1):
         gen_losses.append(gen_loss.item())
 
         if batch % 50 == 0:
-            print(f"""[{epoch}/{str(N_EPOCHS)}][{batch}/{len(dl)}] D loss: {disc_loss.item(): .4f} | G loss: {gen_loss.item(): .4f}""")
+            print(f"""[{epoch}/{str(N_EPOCHS)}][{batch}/{len(dl)}]""", end=" ")
+            print(f"""D loss: {disc_loss.item(): .4f} | G loss: {gen_loss.item(): .4f}""")
 
         if batch == len(dl):
             fake_image = fake_image.detach().cpu()

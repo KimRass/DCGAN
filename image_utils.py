@@ -1,6 +1,6 @@
 import torch
 import torchvision.transforms as T
-import torchvision
+from torchvision.utils import make_grid
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
@@ -69,7 +69,7 @@ def batched_image_to_grid(
     assert b % n_cols == 0,\
         "The batch size should be a multiple of `n_cols` argument"
     pad = max(2, int(max(h, w) * 0.04))
-    grid = torchvision.utils.make_grid(tensor=image, nrow=n_cols, normalize=False, padding=pad)
+    grid = make_grid(tensor=image, nrow=n_cols, normalize=False, padding=pad)
     grid = grid.clone().permute((1, 2, 0)).detach().cpu().numpy()
 
     if normalize:
