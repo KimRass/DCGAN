@@ -19,11 +19,12 @@ def get_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--data_dir", type=str, required=True)
-    parser.add_argument("--img_size", type=int, required=True)
     parser.add_argument("--n_epochs", type=int, required=True) # "30"
+    parser.add_argument("--n_workers", type=int, required=True)
+    parser.add_argument("--img_size", type=int, required=False, default=64)
     # All models were trained with mini-batch stochastic gradient descent (SGD) with a mini-batch size of 128."
     parser.add_argument("--batch_size", type=int, required=False, default=128)
-    parser.add_argument("--n_workers", type=int, required=True)
+    parser.add_argument("--gen_weight", type=float, required=False, default=1)
 
     args = parser.parse_args()
     return args
@@ -82,6 +83,7 @@ if __name__ == "__main__":
             fake_pred = disc(fake_image) # $D(G(z))$
             real_label = torch.ones_like(fake_pred, device=DEVICE)
             gen_loss = crit(fake_pred, real_label) # G 입장에서는 Loss가 낮아져야 함.
+            gen_loss *= args.gen_weight
 
             gen_optim.zero_grad()
             gen_loss.backward()
