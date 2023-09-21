@@ -22,7 +22,7 @@ def get_args():
     parser.add_argument("--img_size", type=int, required=True)
     parser.add_argument("--n_epochs", type=int, required=True) # "30"
     # All models were trained with mini-batch stochastic gradient descent (SGD) with a mini-batch size of 128."
-    parser.add_argument("--batch_size", type=int, required=True)
+    parser.add_argument("--batch_size", type=int, required=False, default=128)
     parser.add_argument("--n_workers", type=int, required=True)
 
     args = parser.parse_args()
