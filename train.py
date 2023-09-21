@@ -73,6 +73,7 @@ if __name__ == "__main__":
             ### Update D.
             with torch.autocast(device_type=DEVICE.type, dtype=torch.float16, enabled=True):
                 real_pred = disc(real_image) # $D(x)$
+                print(real_pred)
                 real_disc_loss = crit(real_pred, real_label) # $\log(D(x))$ # D 입장에서는 Loss가 낮아져야 함.
 
                 fake_image = gen(noise) # $G(z)$

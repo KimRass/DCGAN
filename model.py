@@ -119,7 +119,6 @@ class Discriminator(nn.Module):
         # "The last convolution layer is flattened and then fed into a single sigmoid output."
         x = x.view(-1, 1024 * 4 * 4)
         x = self.proj(x)
-        x = torch.sigmoid(x)
         return x
 
 
