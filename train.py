@@ -19,6 +19,7 @@ def get_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--data_dir", type=str, required=True)
+    parser.add_argument("--img_size", type=int, required=True)
     parser.add_argument("--n_epochs", type=int, required=True) # "30"
     # All models were trained with mini-batch stochastic gradient descent (SGD) with a mini-batch size of 128."
     parser.add_argument("--batch_size", type=int, required=True)
@@ -92,16 +93,16 @@ if __name__ == "__main__":
 
         fake_image = fake_image.detach().cpu()
         grid = batched_image_to_grid(
-            fake_image[: 64, ...], n_cols=8, mean=config.MEAN, std=config.STD
+            fake_image[: 64, ...], n_cols=8, mean=config.MEAN, std=config.STD,
         )
         save_image(grid, path=f"{Path(__file__).parent}/generated_images/epoch_{epoch}.jpg")
 
-        accum_tot_loss = accum_disc_loss + accum_gen_loss
-        if accum_tot_loss < best_loss:
-            cur_ckpt_path = f"{Path(__file__).parent}/checkpoint/epoch_{epoch}_step_{step}.pth"
+        tot_loss = accum_disc_loss + accum_gen_loss
+        if tot_loss < best_loss:
+            cur_ckpt_path = f"{Path(__file__).parent}/checkpoints/epoch_{epoch}.pth"
             save_gen(gen=gen, save_path=cur_ckpt_path)
             Path(prev_ckpt_path).unlink(missing_ok=True)
             print(f"Saved checkpoint.")
 
-            best_loss = accum_tot_loss
+            best_loss = tot_loss
             prev_ckpt_path = cur_ckpt_path

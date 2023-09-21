@@ -57,9 +57,7 @@ def get_image_dataset_mean_and_std(data_dir, ext="jpg"):
     return mean, std
 
 
-def batched_image_to_grid(
-    image, n_cols, normalize=False, mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)
-):
+def batched_image_to_grid(image, n_cols, mean, std):
     b, _, h, w = image.shape
     assert b % n_cols == 0,\
         "The batch size should be a multiple of `n_cols` argument"
@@ -67,10 +65,9 @@ def batched_image_to_grid(
     grid = make_grid(tensor=image, nrow=n_cols, normalize=False, padding=pad)
     grid = grid.clone().permute((1, 2, 0)).detach().cpu().numpy()
 
-    if normalize:
-        grid *= std
-        grid += mean
-    grid *= 255.0
+    grid *= std
+    grid += mean
+    grid *= 255
     grid = np.clip(a=grid, a_min=0, a_max=255).astype("uint8")
 
     for k in range(n_cols + 1):
@@ -78,11 +75,3 @@ def batched_image_to_grid(
     for k in range(b // n_cols + 1):
         grid[(pad + h) * k: (pad + h) * k + pad, :, :] = 255
     return grid
-
-
-# fig = plt.figure(figsize=(8,8))
-# plt.axis("off")
-# ims = [[plt.imshow(np.transpose(i,(1,2,0)), animated=True)] for i in img_list]
-# ani = animation.ArtistAnimation(fig, ims, interval=1000, repeat_delay=1000, blit=True)
-
-# HTML(ani.to_jshtml())
