@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 
 from model import Generator
-from torch_utils import get_device
+from utils import get_device
 
 DEVICE = get_device()
 

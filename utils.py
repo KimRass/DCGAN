@@ -6,6 +6,8 @@ import cv2
 from PIL import Image
 from pathlib import Path
 from tqdm.auto import tqdm
+from time import time
+from datetime import timedelta
 
 
 def load_image(img_path):
@@ -75,3 +77,20 @@ def batched_image_to_grid(image, n_cols, mean, std):
     for k in range(b // n_cols + 1):
         grid[(pad + h) * k: (pad + h) * k + pad, :, :] = 255
     return grid
+
+
+def get_device():
+    if torch.cuda.is_available():
+        device = torch.device("cuda")
+    else:
+        device = torch.device("cpu")
+    return device
+
+
+def save_gen(gen, save_path):
+    Path(save_path).parent.mkdir(parents=True, exist_ok=True)
+    torch.save(gen.state_dict(), str(save_path))
+
+
+def get_elapsed_time(start_time):
+    return timedelta(seconds=round(time() - start_time))

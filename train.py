@@ -12,8 +12,7 @@ from tqdm import tqdm
 import config
 from model import Generator, Discriminator
 from celeba import get_celeba_dataloader
-from image_utils import batched_image_to_grid, save_image
-from torch_utils import get_device, save_gen
+from utils import batched_image_to_grid, save_image, get_device, save_gen, get_elapsed_time
 
 
 def get_args():
@@ -53,11 +52,11 @@ if __name__ == "__main__":
 
     best_loss = math.inf
     prev_ckpt_path = ".pth"
-    for epoch in range(1, args.n_epochs + 1):
+    for epoch in tqdm(range(1, args.n_epochs + 1)):
         accum_real_disc_loss = 0
         accum_fake_disc_loss = 0
         accum_gen_loss = 0
-        for step, real_image in enumerate(tqdm(train_dl), start=1):
+        for step, real_image in enumerate(train_dl, start=1):
             real_image = real_image.to(DEVICE)
 
             ### Update D.
@@ -96,11 +95,15 @@ if __name__ == "__main__":
         print(f"[ Fake D loss: {accum_fake_disc_loss / len(train_dl): .4f} ]", end=" ")
         print(f"[ G loss: {accum_gen_loss / len(train_dl): .4f} ]")
 
-        fake_image = fake_image.detach().cpu()
-        grid = batched_image_to_grid(
-            fake_image[: 64, ...], n_cols=8, mean=config.MEAN, std=config.STD,
-        )
-        save_image(grid, path=f"{Path(__file__).parent}/generated_images/epoch_{epoch}.jpg")
+        gen.eval()
+        with torch.no_grad():
+            noise = torch.randn(args.batch_size, config.LATENT_DIM, device=DEVICE)
+            fake_image = gen(noise)
+            fake_image = fake_image.detach().cpu()
+            grid = batched_image_to_grid(
+                fake_image[: 64, ...], n_cols=8, mean=config.MEAN, std=config.STD,
+            )
+            save_image(grid, path=f"{Path(__file__).parent}/generated_images/epoch_{epoch}.jpg")
 
         tot_loss = accum_real_disc_loss + accum_gen_loss
         if tot_loss < best_loss:

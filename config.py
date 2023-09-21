@@ -1,4 +1,4 @@
-from image_utils import get_image_dataset_mean_and_std
+from utils import get_image_dataset_mean_and_std
 
 ### Data
 IMG_SIZE = 64
