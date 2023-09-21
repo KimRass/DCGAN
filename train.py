@@ -7,6 +7,7 @@ from torch.optim import Adam
 from pathlib import Path
 import argparse
 import math
+from tqdm import tqdm
 
 import config
 from model import Generator, Discriminator
@@ -53,9 +54,10 @@ if __name__ == "__main__":
     best_loss = math.inf
     prev_ckpt_path = ".pth"
     for epoch in range(1, args.n_epochs + 1):
-        accum_disc_loss = 0
+        accum_real_disc_loss = 0
+        accum_fake_disc_loss = 0
         accum_gen_loss = 0
-        for step, real_image in enumerate(train_dl, start=1):
+        for step, real_image in enumerate(tqdm(train_dl, start=1)):
             real_image = real_image.to(DEVICE)
 
             ### Update D.
@@ -85,10 +87,13 @@ if __name__ == "__main__":
             gen_loss.backward()
             gen_optim.step()
 
-            accum_disc_loss += disc_loss.item()
+            accum_real_disc_loss += real_disc_loss.item()
+            accum_fake_disc_loss += fake_disc_loss.item()
             accum_gen_loss += gen_loss.item()
 
-        print(f"[ {epoch}/{args.n_epochs} ][ D loss: {accum_disc_loss / len(train_dl): .4f} ]", end=" ")
+        print(f"[ {epoch}/{args.n_epochs} ]", end=" ")
+        print(f"[ Real D loss: {accum_real_disc_loss / len(train_dl): .4f} ]", end=" ")
+        print(f"[ Fake D loss: {accum_fake_disc_loss / len(train_dl): .4f} ]", end=" ")
         print(f"[ G loss: {accum_gen_loss / len(train_dl): .4f} ]")
 
         fake_image = fake_image.detach().cpu()
@@ -97,7 +102,7 @@ if __name__ == "__main__":
         )
         save_image(grid, path=f"{Path(__file__).parent}/generated_images/epoch_{epoch}.jpg")
 
-        tot_loss = accum_disc_loss + accum_gen_loss
+        tot_loss = accum_real_disc_loss + accum_gen_loss
         if tot_loss < best_loss:
             cur_ckpt_path = f"{Path(__file__).parent}/checkpoints/epoch_{epoch}.pth"
             save_gen(gen=gen, save_path=cur_ckpt_path)
