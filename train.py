@@ -7,7 +7,7 @@ from torch.optim import Adam
 from pathlib import Path
 import argparse
 import math
-from tqdm import tqdm
+from time import time
 
 import config
 from model import Generator, Discriminator
@@ -52,10 +52,11 @@ if __name__ == "__main__":
 
     best_loss = math.inf
     prev_ckpt_path = ".pth"
-    for epoch in tqdm(range(1, args.n_epochs + 1)):
+    for epoch in range(1, args.n_epochs + 1):
         accum_real_disc_loss = 0
         accum_fake_disc_loss = 0
         accum_gen_loss = 0
+        start_time = time()
         for step, real_image in enumerate(train_dl, start=1):
             real_image = real_image.to(DEVICE)
 
@@ -90,7 +91,7 @@ if __name__ == "__main__":
             accum_fake_disc_loss += fake_disc_loss.item()
             accum_gen_loss += gen_loss.item()
 
-        print(f"[ {epoch}/{args.n_epochs} ]", end=" ")
+        print(f"[ {epoch}/{args.n_epochs} ][ {get_elapsed_time(start_time)} ]", end=" ")
         print(f"[ Real D loss: {accum_real_disc_loss / len(train_dl): .4f} ]", end=" ")
         print(f"[ Fake D loss: {accum_fake_disc_loss / len(train_dl): .4f} ]", end=" ")
         print(f"[ G loss: {accum_gen_loss / len(train_dl): .4f} ]")
