@@ -4,6 +4,7 @@
 import torch
 import torch.nn as nn
 from torch.optim import Adam
+from torch.cuda.amp import GradScaler
 from pathlib import Path
 import argparse
 import math
@@ -40,6 +41,9 @@ if __name__ == "__main__":
     disc_optim = Adam(params=disc.parameters(), lr=config.LR, betas=(config.BETA1, config.BETA2))
     gen_optim = Adam(params=gen.parameters(), lr=config.LR, betas=(config.BETA1, config.BETA2))
 
+    disc_scaler = GradScaler()
+    gen_scaler = GradScaler()
+
     train_dl = get_celeba_dataloader(
         data_dir=args.data_dir,
         img_size=config.IMG_SIZE,
@@ -63,23 +67,27 @@ if __name__ == "__main__":
 
             real_label = torch.ones(size=(args.batch_size, 1), device=DEVICE)
             fake_label = torch.zeros(size=(args.batch_size, 1), device=DEVICE)
+            noise = torch.randn(args.batch_size, config.LATENT_DIM, device=DEVICE) # $z$
 
             ### Update D.
-            real_pred = disc(real_image) # $D(x)$
-            real_disc_loss = crit(real_pred, real_label) # $\log(D(x))$ # D 입장에서는 Loss가 낮아져야 함.
+            with torch.autocast(device_type=DEVICE.type, dtype=torch.float16, enabled=True):
+                real_pred = disc(real_image) # $D(x)$
+                real_disc_loss = crit(real_pred, real_label) # $\log(D(x))$ # D 입장에서는 Loss가 낮아져야 함.
 
-            noise = torch.randn(args.batch_size, config.LATENT_DIM, device=DEVICE) # $z$
-            fake_image = gen(noise) # $G(z)$
-            ### DO NOT update G while updating D!
-            fake_pred1 = disc(fake_image.detach()) # $D(G(z))$
-            # $\log(1 - D(G(z)))$ # D 입장에서는 Loss가 낮아져야 함.
-            fake_disc_loss = crit(fake_pred1, fake_label)
+                fake_image = gen(noise) # $G(z)$
+                ### DO NOT update G while updating D!
+                fake_pred1 = disc(fake_image.detach()) # $D(G(z))$
+                # $\log(1 - D(G(z)))$ # D 입장에서는 Loss가 낮아져야 함.
+                fake_disc_loss = crit(fake_pred1, fake_label)
 
-            disc_loss = real_disc_loss + fake_disc_loss
+                disc_loss = real_disc_loss + fake_disc_loss
 
             disc_optim.zero_grad()
-            disc_loss.backward()
-            disc_optim.step()
+            # disc_loss.backward()
+            # disc_optim.step()
+            disc_scaler.scale(disc_loss).backward()
+            disc_scaler.step(disc_optim)
+            disc_scaler.update()
 
             ### Update G.
             fake_pred2 = disc(fake_image) # $D(G(z))$
@@ -95,11 +103,11 @@ if __name__ == "__main__":
             accum_gen_loss += gen_loss.item()
 
         print(f"[ {epoch}/{args.n_epochs} ][ {get_elapsed_time(start_time)} ]", end="")
-        print(f"[ Real D loss: {accum_real_disc_loss / len(train_dl): .4f} ]", end="")
-        print(f"[ Fake D loss: {accum_fake_disc_loss / len(train_dl): .4f} ]", end="")
-        print(f"[ G loss: {accum_gen_loss / len(train_dl) / args.gen_weight: .4f} ]", end="")
-        print(f"[ D(x): {real_pred.mean(): .4f} ]", end="")
-        print(f"[ D(G(z)): {fake_pred1.mean(): .4f} | {fake_pred2.mean(): .4f}]")
+        print(f"[ Real D loss: {accum_real_disc_loss / len(train_dl):.4f} ]", end="")
+        print(f"[ Fake D loss: {accum_fake_disc_loss / len(train_dl):.4f} ]", end="")
+        print(f"[ G loss: {accum_gen_loss / len(train_dl) / args.gen_weight:.4f} ]", end="")
+        print(f"[ D(x): {real_pred.mean():.4f} ]", end="")
+        print(f"[ D(G(z)): {fake_pred1.mean():.4f} | {fake_pred2.mean():.4f}]")
 
         gen.eval()
         with torch.no_grad():
