@@ -2,12 +2,8 @@ import torch
 import torchvision.transforms as T
 from torchvision.utils import make_grid
 import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.animation as animation
-from IPython.display import HTML
 import cv2
 from PIL import Image
-from moviepy.video.io.bindings import mplfig_to_npimage
 from pathlib import Path
 from tqdm.auto import tqdm
 
@@ -39,7 +35,6 @@ def show_image(img):
 def save_image(img, path):
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
-
     _to_pil(img).save(str(path))
 
 
@@ -49,7 +44,7 @@ def get_image_dataset_mean_and_std(data_dir, ext="jpg"):
     sum_rgb = 0
     sum_rgb_square = 0
     sum_resol = 0
-    for img_path in tqdm(list(data_dir.glob(f"""**/*.{ext}"""))):
+    for img_path in tqdm(list(data_dir.glob(f"**/*.{ext}"))):
         pil_img = Image.open(img_path)
         tensor = T.ToTensor()(pil_img)
         
