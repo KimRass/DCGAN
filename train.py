@@ -57,7 +57,7 @@ if __name__ == "__main__":
         accum_real_disc_loss = 0
         accum_fake_disc_loss = 0
         accum_gen_loss = 0
-        for step, real_image in enumerate(tqdm(train_dl, start=1)):
+        for step, real_image in enumerate(tqdm(train_dl), start=1):
             real_image = real_image.to(DEVICE)
 
             ### Update D.
