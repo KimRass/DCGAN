@@ -66,14 +66,13 @@ if __name__ == "__main__":
         for step, real_image in enumerate(train_dl, start=1):
             real_image = real_image.to(DEVICE)
 
-            real_label = torch.ones(size=(args.batch_size, 1), device=DEVICE)
-            fake_label = torch.zeros(size=(args.batch_size, 1), device=DEVICE)
-            noise = torch.randn(args.batch_size, config.LATENT_DIM, device=DEVICE) # $z$
+            real_label = torch.ones(size=(args.batch_size, 1), dtype=torch.float32, device=DEVICE)
+            fake_label = torch.zeros(size=(args.batch_size, 1), dtype=torch.float32, device=DEVICE)
+            noise = torch.randn(size=(args.batch_size, config.LATENT_DIM), device=DEVICE) # $z$
 
             ### Update D.
             with torch.autocast(device_type=DEVICE.type, dtype=torch.float16, enabled=True):
                 real_pred = disc(real_image) # $D(x)$
-                print(real_pred)
                 real_disc_loss = crit(real_pred, real_label) # $\log(D(x))$ # D 입장에서는 Loss가 낮아져야 함.
 
                 fake_image = gen(noise) # $G(z)$
@@ -113,7 +112,6 @@ if __name__ == "__main__":
 
         gen.eval()
         with torch.no_grad():
-            noise = torch.randn(args.batch_size, config.LATENT_DIM, device=DEVICE)
             fake_image = gen(noise)
             fake_image = fake_image.detach().cpu()
             grid = batched_image_to_grid(
