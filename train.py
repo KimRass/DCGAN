@@ -55,7 +55,7 @@ if __name__ == "__main__":
     for epoch in range(1, args.n_epochs + 1):
         accum_disc_loss = 0
         accum_gen_loss = 0
-        for step, (real_image, _) in enumerate(train_dl, start=1):
+        for step, real_image in enumerate(train_dl, start=1):
             real_image = real_image.to(DEVICE)
 
             ### Update D.
