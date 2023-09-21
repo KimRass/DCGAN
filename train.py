@@ -53,7 +53,8 @@ if __name__ == "__main__":
         n_workers=args.n_workers,
     )
 
-    crit = nn.BCELoss()
+    # crit = nn.BCELoss()
+    crit = nn.BCEWithLogitsLoss
 
     best_loss = math.inf
     prev_ckpt_path = ".pth"
@@ -83,20 +84,20 @@ if __name__ == "__main__":
                 disc_loss = real_disc_loss + fake_disc_loss
 
             disc_optim.zero_grad()
-            # disc_loss.backward()
-            # disc_optim.step()
             disc_scaler.scale(disc_loss).backward()
             disc_scaler.step(disc_optim)
             disc_scaler.update()
 
             ### Update G.
-            fake_pred2 = disc(fake_image) # $D(G(z))$
-            gen_loss = crit(fake_pred2, real_label) # G 입장에서는 Loss가 낮아져야 함.
-            gen_loss *= args.gen_weight
+            with torch.autocast(device_type=DEVICE.type, dtype=torch.float16, enabled=True):
+                fake_pred2 = disc(fake_image) # $D(G(z))$
+                gen_loss = crit(fake_pred2, real_label) # G 입장에서는 Loss가 낮아져야 함.
+                gen_loss *= args.gen_weight
 
             gen_optim.zero_grad()
-            gen_loss.backward()
-            gen_optim.step()
+            gen_scaler.scale(gen_loss).backward()
+            gen_scaler.step(gen_optim)
+            gen_scaler.update()
 
             accum_real_disc_loss += real_disc_loss.item()
             accum_fake_disc_loss += fake_disc_loss.item()
