@@ -87,8 +87,8 @@ if __name__ == "__main__":
             accum_disc_loss += disc_loss.item()
             accum_gen_loss += gen_loss.item()
 
-        print(f"[ {epoch}/{str(args.n_epochs)} ][ {step}/{len(train_dl)} ]", end=" ")
-        print(f"D loss: {accum_disc_loss / len(train_dl): .4f} | G loss: {accum_gen_loss / len(train_dl): .4f}")
+        print(f"[ {epoch}/{str(args.n_epochs)} ][ D loss: {accum_disc_loss / len(train_dl): .4f} ]", end=" ")
+        print(f"[ G loss: {accum_gen_loss / len(train_dl): .4f} ]")
 
         fake_image = fake_image.detach().cpu()
         grid = batched_image_to_grid(
