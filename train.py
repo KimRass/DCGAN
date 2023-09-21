@@ -54,7 +54,7 @@ if __name__ == "__main__":
     )
 
     # crit = nn.BCELoss()
-    crit = nn.BCEWithLogitsLoss
+    crit = nn.BCEWithLogitsLoss()
 
     best_loss = math.inf
     prev_ckpt_path = ".pth"
@@ -66,8 +66,8 @@ if __name__ == "__main__":
         for step, real_image in enumerate(train_dl, start=1):
             real_image = real_image.to(DEVICE)
 
-            real_label = torch.ones(size=(args.batch_size, 1), dtype=torch.float32, device=DEVICE)
-            fake_label = torch.zeros(size=(args.batch_size, 1), dtype=torch.float32, device=DEVICE)
+            real_label = torch.ones(size=(args.batch_size, 1), device=DEVICE)
+            fake_label = torch.zeros(size=(args.batch_size, 1), device=DEVICE)
             noise = torch.randn(size=(args.batch_size, config.LATENT_DIM), device=DEVICE) # $z$
 
             ### Update D.
