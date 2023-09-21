@@ -71,9 +71,9 @@ if __name__ == "__main__":
             noise = torch.randn(args.batch_size, config.LATENT_DIM, device=DEVICE) # $z$
             fake_image = gen(noise) # $G(z)$
             ### DO NOT update G while updating D!
-            fake_pred = disc(fake_image.detach()) # $D(G(z))$
+            fake_pred1 = disc(fake_image.detach()) # $D(G(z))$
             # $\log(1 - D(G(z)))$ # D 입장에서는 Loss가 낮아져야 함.
-            fake_disc_loss = crit(fake_pred, fake_label)
+            fake_disc_loss = crit(fake_pred1, fake_label)
 
             disc_loss = real_disc_loss + fake_disc_loss
 
@@ -82,8 +82,8 @@ if __name__ == "__main__":
             disc_optim.step()
 
             ### Update G.
-            fake_pred = disc(fake_image) # $D(G(z))$
-            gen_loss = crit(fake_pred, real_label) # G 입장에서는 Loss가 낮아져야 함.
+            fake_pred2 = disc(fake_image) # $D(G(z))$
+            gen_loss = crit(fake_pred2, real_label) # G 입장에서는 Loss가 낮아져야 함.
             gen_loss *= args.gen_weight
 
             gen_optim.zero_grad()
@@ -94,10 +94,12 @@ if __name__ == "__main__":
             accum_fake_disc_loss += fake_disc_loss.item()
             accum_gen_loss += gen_loss.item()
 
-        print(f"[ {epoch}/{args.n_epochs} ][ {get_elapsed_time(start_time)} ]", end=" ")
-        print(f"[ Real D loss: {accum_real_disc_loss / len(train_dl): .4f} ]", end=" ")
-        print(f"[ Fake D loss: {accum_fake_disc_loss / len(train_dl): .4f} ]", end=" ")
-        print(f"[ G loss: {accum_gen_loss / len(train_dl): .4f} ]")
+        print(f"[ {epoch}/{args.n_epochs} ][ {get_elapsed_time(start_time)} ]", end="")
+        print(f"[ Real D loss: {accum_real_disc_loss / len(train_dl): .4f} ]", end="")
+        print(f"[ Fake D loss: {accum_fake_disc_loss / len(train_dl): .4f} ]", end="")
+        print(f"[ G loss: {accum_gen_loss / len(train_dl) / args.gen_weight: .4f} ]", end="")
+        print(f"[ D(x): {real_pred: .4f} ]", end="")
+        print(f"[ D(G(z)): {fake_pred1: .4f} | {fake_pred2: .4f}]")
 
         gen.eval()
         with torch.no_grad():
