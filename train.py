@@ -19,8 +19,8 @@ def get_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--data_dir", type=str, required=True)
-    parser.add_argument("--n_epochs", type=int, required=True) # "30"
     parser.add_argument("--n_workers", type=int, required=True)
+    parser.add_argument("--n_epochs", type=int, required=False, default=30) # "30"
     parser.add_argument("--img_size", type=int, required=False, default=64)
     # All models were trained with mini-batch stochastic gradient descent (SGD) with a mini-batch size of 128."
     parser.add_argument("--batch_size", type=int, required=False, default=128)
@@ -61,17 +61,19 @@ if __name__ == "__main__":
         for step, real_image in enumerate(train_dl, start=1):
             real_image = real_image.to(DEVICE)
 
+            real_label = torch.ones(size=(args.batch_size, 1), device=DEVICE)
+            fake_label = torch.zeros(size=(args.batch_size, 1), device=DEVICE)
+
             ### Update D.
             real_pred = disc(real_image) # $D(x)$
-            real_label = torch.ones_like(real_pred, device=DEVICE)
             real_disc_loss = crit(real_pred, real_label) # $\log(D(x))$ # D 입장에서는 Loss가 낮아져야 함.
 
             noise = torch.randn(args.batch_size, config.LATENT_DIM, device=DEVICE) # $z$
             fake_image = gen(noise) # $G(z)$
             ### DO NOT update G while updating D!
             fake_pred = disc(fake_image.detach()) # $D(G(z))$
-            fake_label = torch.zeros_like(fake_pred, device=DEVICE)
-            fake_disc_loss = crit(fake_pred, fake_label) # $\log(1 - D(G(z)))$ # D 입장에서는 Loss가 낮아져야 함.
+            # $\log(1 - D(G(z)))$ # D 입장에서는 Loss가 낮아져야 함.
+            fake_disc_loss = crit(fake_pred, fake_label)
 
             disc_loss = real_disc_loss + fake_disc_loss
 
@@ -81,7 +83,6 @@ if __name__ == "__main__":
 
             ### Update G.
             fake_pred = disc(fake_image) # $D(G(z))$
-            real_label = torch.ones_like(fake_pred, device=DEVICE)
             gen_loss = crit(fake_pred, real_label) # G 입장에서는 Loss가 낮아져야 함.
             gen_loss *= args.gen_weight
 
