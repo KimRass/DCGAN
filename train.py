@@ -34,9 +34,9 @@ def get_args():
     parser.add_argument("--img_size", type=int, required=False, default=64)
     # All models were trained with mini-batch stochastic gradient descent (SGD) with a mini-batch size of 128."
     parser.add_argument("--batch_size", type=int, required=False, default=128)
-    # parser.add_argument("--gen_weight", type=float, required=False, default=1)
     parser.add_argument("--disc_lr", type=float, required=False, default=0.00016)
     parser.add_argument("--gen_lr", type=float, required=False, default=0.0002)
+    parser.add_argument("--lamb", type=float, required=True)
 
     args = parser.parse_args()
     return args
@@ -93,6 +93,10 @@ if __name__ == "__main__":
 
                 disc_loss = real_disc_loss + fake_disc_loss
 
+                real_pred_mean = torch.sigmoid(real_pred).mean()
+                fake_pred1_mean = torch.sigmoid(fake_pred1).mean()
+                disc_loss += args.lamb * ((real_pred_mean - 0.5) ** 2 + (fake_pred1_mean - 0.5) ** 2)
+
             disc_optim.zero_grad()
             disc_scaler.scale(disc_loss).backward()
             disc_scaler.step(disc_optim)
@@ -105,7 +109,9 @@ if __name__ == "__main__":
                 fake_image = gen(noise) # $G(z)$
                 fake_pred2 = disc(fake_image) # $D(G(z))$
                 gen_loss = crit(fake_pred2, real_label) # G 입장에서는 Loss가 낮아져야 함.
-                # gen_loss *= args.gen_weight
+
+                fake_pred2_mean = torch.sigmoid(fake_pred2).mean()
+                gen_loss += args.lamb * ((fake_pred2_mean - 0.5) ** 2)
 
             gen_optim.zero_grad()
             gen_scaler.scale(gen_loss).backward()
@@ -119,10 +125,6 @@ if __name__ == "__main__":
             accum_real_disc_loss += real_disc_loss.item()
             accum_fake_disc_loss += fake_disc_loss.item()
 
-        real_pred_mean = torch.sigmoid(real_pred).mean()
-        fake_pred1_mean = torch.sigmoid(fake_pred1).mean()
-        fake_pred2_mean = torch.sigmoid(fake_pred2).mean()
-        # value = torch.abs(real_pred_mean + fake_pred1_mean + fake_pred2_mean - 0.5 * 3)
         value = (real_pred_mean - 0.5) ** 2 + (fake_pred1_mean - 0.5) ** 2 + (fake_pred2_mean - 0.5) ** 2
 
         print(f"[ {epoch}/{args.n_epochs} ]", end="")
