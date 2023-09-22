@@ -112,7 +112,7 @@ if __name__ == "__main__":
         print(f"[ G loss: {accum_gen_loss / len(train_dl) / args.gen_weight:.3f} ]", end="")
         print(f"[ RtoR: {torch.sigmoid(real_pred).mean():.3f} ]", end="")
         print(f"[ FtoF: {torch.sigmoid(fake_pred1).mean():.3f} ]", end="")
-        print(f"[ FtoR: {torch.sigmoid(real_pred).mean():.3f}]", end="")
+        print(f"[ FtoR: {torch.sigmoid(fake_pred2).mean():.3f}]", end="")
         print(f"[ Prediction sum: {diff:.3f}]")
 
         gen.eval()
