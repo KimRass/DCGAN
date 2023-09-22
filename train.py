@@ -53,7 +53,6 @@ if __name__ == "__main__":
         n_workers=args.n_workers,
     )
 
-    # crit = nn.BCELoss()
     crit = nn.BCEWithLogitsLoss()
 
     best_loss = math.inf
@@ -104,11 +103,11 @@ if __name__ == "__main__":
             accum_gen_loss += gen_loss.item()
 
         print(f"[ {epoch}/{args.n_epochs} ][ {get_elapsed_time(start_time)} ]", end="")
-        print(f"[ Real D loss: {accum_real_disc_loss / len(train_dl):.4f} ]", end="")
-        print(f"[ Fake D loss: {accum_fake_disc_loss / len(train_dl):.4f} ]", end="")
-        print(f"[ G loss: {accum_gen_loss / len(train_dl) / args.gen_weight:.4f} ]", end="")
-        print(f"[ D(x): {real_pred.mean():.4f} ]", end="")
-        print(f"[ D(G(z)): {fake_pred1.mean():.4f} | {fake_pred2.mean():.4f}]")
+        print(f"[ Real D loss: {accum_real_disc_loss / len(train_dl):.3f} ]", end="")
+        print(f"[ Fake D loss: {accum_fake_disc_loss / len(train_dl):.3f} ]", end="")
+        print(f"[ G loss: {accum_gen_loss / len(train_dl) / args.gen_weight:.3f} ]", end="")
+        print(f"[ D(x): {real_pred.mean():.3f} ]", end="")
+        print(f"[ D(G(z)): {fake_pred1.mean():.3f} | {fake_pred2.mean():.3f}]")
 
         gen.eval()
         with torch.no_grad():
