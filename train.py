@@ -73,7 +73,7 @@ if __name__ == "__main__":
             with torch.autocast(device_type=DEVICE.type, dtype=torch.float16, enabled=True):
                 fake_image = gen(noise) # $G(z)$
                 fake_pred2 = disc(fake_image) # $D(G(z))$
-                gen_loss = crit(fake_pred2, real_label) # G 입장에서는 Loss가 낮아져야 함.
+                gen_loss = crit(fake_pred2.detach(), real_label) # G 입장에서는 Loss가 낮아져야 함.
                 gen_loss *= args.gen_weight
 
             gen_optim.zero_grad()
