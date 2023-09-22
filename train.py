@@ -35,7 +35,9 @@ def get_args():
     # All models were trained with mini-batch stochastic gradient descent (SGD) with a mini-batch size of 128."
     parser.add_argument("--batch_size", type=int, required=False, default=128)
     # parser.add_argument("--gen_weight", type=float, required=False, default=1)
-    parser.add_argument("--disc_prob", type=float, required=False, default=1)
+    # parser.add_argument("--disc_prob", type=float, required=False, default=1)
+    parser.add_argument("--disc_lr", type=float, required=False, default=0.00016)
+    parser.add_argument("--gen_lr", type=float, required=False, default=0.0002)
 
     args = parser.parse_args()
     return args
@@ -48,8 +50,8 @@ if __name__ == "__main__":
     gen = Generator().to(DEVICE)
     disc = Discriminator().to(DEVICE)
 
-    disc_optim = Adam(params=disc.parameters(), lr=config.LR, betas=(config.BETA1, config.BETA2))
-    gen_optim = Adam(params=gen.parameters(), lr=config.LR, betas=(config.BETA1, config.BETA2))
+    disc_optim = Adam(params=disc.parameters(), lr=args.disc_lr, betas=(config.BETA1, config.BETA2))
+    gen_optim = Adam(params=gen.parameters(), lr=args.gen_lr, betas=(config.BETA1, config.BETA2))
 
     disc_scaler = GradScaler()
     gen_scaler = GradScaler()
@@ -98,26 +100,26 @@ if __name__ == "__main__":
             unfreeze_model(disc)
 
             ### Update D.
-            if random.random() < args.disc_prob:
-                with torch.autocast(device_type=DEVICE.type, dtype=torch.float16, enabled=True):
-                    real_pred = disc(real_image) # $D(x)$
-                    real_disc_loss = crit(real_pred, real_label) # $\log(D(x))$ # D 입장에서는 Loss가 낮아져야 함.
+            # if random.random() < args.disc_prob:
+            with torch.autocast(device_type=DEVICE.type, dtype=torch.float16, enabled=True):
+                real_pred = disc(real_image) # $D(x)$
+                real_disc_loss = crit(real_pred, real_label) # $\log(D(x))$ # D 입장에서는 Loss가 낮아져야 함.
 
-                    fake_image = gen(noise) # $G(z)$
-                    ### DO NOT update G while updating D!
-                    fake_pred1 = disc(fake_image.detach()) # $D(G(z))$
-                    # $\log(1 - D(G(z)))$ # D 입장에서는 Loss가 낮아져야 함.
-                    fake_disc_loss = crit(fake_pred1, fake_label)
+                fake_image = gen(noise) # $G(z)$
+                ### DO NOT update G while updating D!
+                fake_pred1 = disc(fake_image.detach()) # $D(G(z))$
+                # $\log(1 - D(G(z)))$ # D 입장에서는 Loss가 낮아져야 함.
+                fake_disc_loss = crit(fake_pred1, fake_label)
 
-                    disc_loss = real_disc_loss + fake_disc_loss
+                disc_loss = real_disc_loss + fake_disc_loss
 
-                disc_optim.zero_grad()
-                disc_scaler.scale(disc_loss).backward()
-                disc_scaler.step(disc_optim)
-                disc_scaler.update()
+            disc_optim.zero_grad()
+            disc_scaler.scale(disc_loss).backward()
+            disc_scaler.step(disc_optim)
+            disc_scaler.update()
 
-                accum_real_disc_loss += real_disc_loss.item()
-                accum_fake_disc_loss += fake_disc_loss.item()
+            accum_real_disc_loss += real_disc_loss.item()
+            accum_fake_disc_loss += fake_disc_loss.item()
 
         real_pred_mean = torch.sigmoid(real_pred).mean()
         fake_pred1_mean = torch.sigmoid(fake_pred1).mean()
