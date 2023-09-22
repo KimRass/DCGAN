@@ -25,7 +25,6 @@ def get_args():
     parser.add_argument("--img_size", type=int, required=False, default=64)
     # All models were trained with mini-batch stochastic gradient descent (SGD) with a mini-batch size of 128."
     parser.add_argument("--batch_size", type=int, required=False, default=128)
-    parser.add_argument("--gen_weight", type=float, required=False, default=1)
 
     args = parser.parse_args()
     return args
@@ -91,7 +90,6 @@ if __name__ == "__main__":
             with torch.autocast(device_type=DEVICE.type, dtype=torch.float16, enabled=True):
                 fake_pred2 = disc(fake_image) # $D(G(z))$
                 gen_loss = crit(fake_pred2, real_label) # G 입장에서는 Loss가 낮아져야 함.
-                gen_loss *= args.gen_weight
 
             gen_optim.zero_grad()
             gen_scaler.scale(gen_loss).backward()
@@ -105,9 +103,9 @@ if __name__ == "__main__":
         print(f"[ {epoch}/{args.n_epochs} ][ {get_elapsed_time(start_time)} ]", end="")
         print(f"[ Real D loss: {accum_real_disc_loss / len(train_dl):.3f} ]", end="")
         print(f"[ Fake D loss: {accum_fake_disc_loss / len(train_dl):.3f} ]", end="")
-        print(f"[ G loss: {accum_gen_loss / len(train_dl) / args.gen_weight:.3f} ]", end="")
+        print(f"[ G loss: {accum_gen_loss / len(train_dl):.3f} ]", end="")
         print(f"[ Real-real: {real_pred.mean():.3f} ]", end="")
-        print(f"[ Fake-fake: {fake_pred1.mean():.3f} ]", enc="")
+        print(f"[ Fake-fake: {fake_pred1.mean():.3f} ]", end="")
         print(f"[ Fake-real: {fake_pred2.mean():.3f}]")
 
         gen.eval()
