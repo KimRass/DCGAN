@@ -68,6 +68,17 @@ if __name__ == "__main__":
             fake_label = torch.zeros(size=(args.batch_size, 1), device=DEVICE)
             noise = torch.randn(size=(args.batch_size, config.LATENT_DIM), device=DEVICE) # $z$
 
+            ### Update G.
+            with torch.autocast(device_type=DEVICE.type, dtype=torch.float16, enabled=True):
+                fake_image = gen(noise) # $G(z)$
+                fake_pred2 = disc(fake_image) # $D(G(z))$
+                gen_loss = crit(fake_pred2, real_label) # G 입장에서는 Loss가 낮아져야 함.
+
+            gen_optim.zero_grad()
+            gen_scaler.scale(gen_loss).backward()
+            gen_scaler.step(gen_optim)
+            gen_scaler.update()
+
             ### Update D.
             with torch.autocast(device_type=DEVICE.type, dtype=torch.float16, enabled=True):
                 real_pred = disc(real_image) # $D(x)$
@@ -85,16 +96,6 @@ if __name__ == "__main__":
             disc_scaler.scale(disc_loss).backward()
             disc_scaler.step(disc_optim)
             disc_scaler.update()
-
-            ### Update G.
-            with torch.autocast(device_type=DEVICE.type, dtype=torch.float16, enabled=True):
-                fake_pred2 = disc(fake_image) # $D(G(z))$
-                gen_loss = crit(fake_pred2, real_label) # G 입장에서는 Loss가 낮아져야 함.
-
-            gen_optim.zero_grad()
-            gen_scaler.scale(gen_loss).backward()
-            gen_scaler.step(gen_optim)
-            gen_scaler.update()
 
             accum_real_disc_loss += real_disc_loss.item()
             accum_fake_disc_loss += fake_disc_loss.item()
