@@ -118,7 +118,7 @@ if __name__ == "__main__":
         real_pred_mean = torch.sigmoid(real_pred).mean()
         fake_pred1_mean = torch.sigmoid(fake_pred1).mean()
         fake_pred2_mean = torch.sigmoid(fake_pred2).mean()
-        diff = torch.abs(torch.sum(real_pred_mean, fake_pred1_mean, fake_pred2_mean) - 0.5 * 3)
+        diff = torch.abs(real_pred_mean + fake_pred1_mean + fake_pred2_mean - 0.5 * 3)
 
         print(f"[ {epoch}/{args.n_epochs} ]", end="")
         print(f"[ Real D loss: {accum_real_disc_loss / len(train_dl):.3f} ]", end="")
