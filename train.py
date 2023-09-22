@@ -103,16 +103,16 @@ if __name__ == "__main__":
             accum_fake_disc_loss += fake_disc_loss.item()
             accum_gen_loss += gen_loss.item()
 
-        pred_sum = real_pred.mean() + fake_pred1.mean() + fake_pred2.mean()
+        pred_sum = torch.sigmoid(real_pred).mean() + torch.sigmoid(fake_pred1).mean() + torch.sigmoid(fake_pred2).mean()
         diff = torch.abs(pred_sum - 0.5 * 3)
 
         print(f"[ {epoch}/{args.n_epochs} ][ {get_elapsed_time(start_time)} ]", end="")
         print(f"[ Real D loss: {accum_real_disc_loss / len(train_dl):.3f} ]", end="")
         print(f"[ Fake D loss: {accum_fake_disc_loss / len(train_dl):.3f} ]", end="")
         print(f"[ G loss: {accum_gen_loss / len(train_dl) / args.gen_weight:.3f} ]", end="")
-        print(f"[ RtoR: {real_pred.mean():.3f} ]", end="")
-        print(f"[ FtoF: {fake_pred1.mean():.3f} ]", end="")
-        print(f"[ FtoR: {fake_pred2.mean():.3f}]", end="")
+        print(f"[ RtoR: {torch.sigmoid(real_pred).mean():.3f} ]", end="")
+        print(f"[ FtoF: {torch.sigmoid(fake_pred1).mean():.3f} ]", end="")
+        print(f"[ FtoR: {torch.sigmoid(real_pred).mean():.3f}]", end="")
         print(f"[ Prediction sum: {diff:.3f}]")
 
         gen.eval()
