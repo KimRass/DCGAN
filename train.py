@@ -13,7 +13,15 @@ from time import time
 import config
 from model import Generator, Discriminator
 from celeba import get_celeba_dataloader
-from utils import batched_image_to_grid, save_image, get_device, save_checkpoint, get_elapsed_time
+from utils import (
+    batched_image_to_grid,
+    save_image,
+    get_device,
+    save_checkpoint,
+    get_elapsed_time,
+    freeze_model,
+    unfreeze_model,
+)
 
 
 def get_args():
@@ -70,16 +78,20 @@ if __name__ == "__main__":
             noise = torch.randn(size=(args.batch_size, config.LATENT_DIM), device=DEVICE) # $z$
 
             ### Update G.
+            freeze_model(disc)
+
             with torch.autocast(device_type=DEVICE.type, dtype=torch.float16, enabled=True):
                 fake_image = gen(noise) # $G(z)$
                 fake_pred2 = disc(fake_image) # $D(G(z))$
-                gen_loss = crit(fake_pred2.detach(), real_label) # G 입장에서는 Loss가 낮아져야 함.
+                gen_loss = crit(fake_pred2, real_label) # G 입장에서는 Loss가 낮아져야 함.
                 gen_loss *= args.gen_weight
 
             gen_optim.zero_grad()
             gen_scaler.scale(gen_loss).backward()
             gen_scaler.step(gen_optim)
             gen_scaler.update()
+
+            unfreeze_model(disc)
 
             ### Update D.
             with torch.autocast(device_type=DEVICE.type, dtype=torch.float16, enabled=True):
