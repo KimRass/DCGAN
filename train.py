@@ -106,8 +106,9 @@ if __name__ == "__main__":
         print(f"[ Real D loss: {accum_real_disc_loss / len(train_dl):.3f} ]", end="")
         print(f"[ Fake D loss: {accum_fake_disc_loss / len(train_dl):.3f} ]", end="")
         print(f"[ G loss: {accum_gen_loss / len(train_dl) / args.gen_weight:.3f} ]", end="")
-        print(f"[ D(x): {real_pred.mean():.3f} ]", end="")
-        print(f"[ D(G(z)): {fake_pred1.mean():.3f} | {fake_pred2.mean():.3f}]")
+        print(f"[ Real-real: {real_pred.mean():.3f} ]", end="")
+        print(f"[ Fake-fake: {fake_pred1.mean():.3f} ]", enc="")
+        print(f"[ Fake-real: {fake_pred2.mean():.3f}]")
 
         gen.eval()
         with torch.no_grad():
