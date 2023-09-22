@@ -13,7 +13,7 @@ from time import time
 import config
 from model import Generator, Discriminator
 from celeba import get_celeba_dataloader
-from utils import batched_image_to_grid, save_image, get_device, save_gen, get_elapsed_time
+from utils import batched_image_to_grid, save_image, get_device, save_checkpoint, get_elapsed_time
 
 
 def get_args():
@@ -25,6 +25,7 @@ def get_args():
     parser.add_argument("--img_size", type=int, required=False, default=64)
     # All models were trained with mini-batch stochastic gradient descent (SGD) with a mini-batch size of 128."
     parser.add_argument("--batch_size", type=int, required=False, default=128)
+    parser.add_argument("--gen_weight", type=float, required=False, default=1)
 
     args = parser.parse_args()
     return args
@@ -73,6 +74,7 @@ if __name__ == "__main__":
                 fake_image = gen(noise) # $G(z)$
                 fake_pred2 = disc(fake_image) # $D(G(z))$
                 gen_loss = crit(fake_pred2, real_label) # G 입장에서는 Loss가 낮아져야 함.
+                gen_loss *= args.gen_weight
 
             gen_optim.zero_grad()
             gen_scaler.scale(gen_loss).backward()
@@ -107,7 +109,7 @@ if __name__ == "__main__":
         print(f"[ {epoch}/{args.n_epochs} ][ {get_elapsed_time(start_time)} ]", end="")
         print(f"[ Real D loss: {accum_real_disc_loss / len(train_dl):.3f} ]", end="")
         print(f"[ Fake D loss: {accum_fake_disc_loss / len(train_dl):.3f} ]", end="")
-        print(f"[ G loss: {accum_gen_loss / len(train_dl):.3f} ]", end="")
+        print(f"[ G loss: {accum_gen_loss / len(train_dl) / args.gen_weight:.3f} ]", end="")
         print(f"[ RtoR: {real_pred.mean():.3f} ]", end="")
         print(f"[ FtoF: {fake_pred1.mean():.3f} ]", end="")
         print(f"[ FtoR: {fake_pred2.mean():.3f}]", end="")
@@ -124,7 +126,17 @@ if __name__ == "__main__":
 
         if diff < best_diff:
             cur_ckpt_path = f"{Path(__file__).parent}/checkpoints/epoch_{epoch}.pth"
-            save_gen(gen=gen, save_path=cur_ckpt_path)
+            save_checkpoint(
+                epoch=epoch,
+                disc=disc,
+                gen=gen,
+                disc_optim=disc_optim,
+                gen_optim=gen_optim,
+                disc_scaler=disc_scaler,
+                gen_scaler=gen_scaler,
+                diff=diff,
+                save_path=cur_ckpt_path,
+            )
             Path(prev_ckpt_path).unlink(missing_ok=True)
             print(f"Saved checkpoint.")
 
