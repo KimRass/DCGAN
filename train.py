@@ -9,6 +9,7 @@ from pathlib import Path
 import argparse
 import math
 from time import time
+import random
 
 import config
 from model import Generator, Discriminator
@@ -33,7 +34,8 @@ def get_args():
     parser.add_argument("--img_size", type=int, required=False, default=64)
     # All models were trained with mini-batch stochastic gradient descent (SGD) with a mini-batch size of 128."
     parser.add_argument("--batch_size", type=int, required=False, default=128)
-    parser.add_argument("--gen_weight", type=float, required=False, default=1)
+    # parser.add_argument("--gen_weight", type=float, required=False, default=1)
+    parser.add_argument("--disc_prob", type=float, required=False, default=1)
 
     args = parser.parse_args()
     return args
@@ -84,36 +86,38 @@ if __name__ == "__main__":
                 fake_image = gen(noise) # $G(z)$
                 fake_pred2 = disc(fake_image) # $D(G(z))$
                 gen_loss = crit(fake_pred2, real_label) # G 입장에서는 Loss가 낮아져야 함.
-                gen_loss *= args.gen_weight
+                # gen_loss *= args.gen_weight
 
             gen_optim.zero_grad()
             gen_scaler.scale(gen_loss).backward()
             gen_scaler.step(gen_optim)
             gen_scaler.update()
 
+            accum_gen_loss += gen_loss.item()
+
             unfreeze_model(disc)
 
             ### Update D.
-            with torch.autocast(device_type=DEVICE.type, dtype=torch.float16, enabled=True):
-                real_pred = disc(real_image) # $D(x)$
-                real_disc_loss = crit(real_pred, real_label) # $\log(D(x))$ # D 입장에서는 Loss가 낮아져야 함.
+            if random.random() < args.disc_prob:
+                with torch.autocast(device_type=DEVICE.type, dtype=torch.float16, enabled=True):
+                    real_pred = disc(real_image) # $D(x)$
+                    real_disc_loss = crit(real_pred, real_label) # $\log(D(x))$ # D 입장에서는 Loss가 낮아져야 함.
 
-                fake_image = gen(noise) # $G(z)$
-                ### DO NOT update G while updating D!
-                fake_pred1 = disc(fake_image.detach()) # $D(G(z))$
-                # $\log(1 - D(G(z)))$ # D 입장에서는 Loss가 낮아져야 함.
-                fake_disc_loss = crit(fake_pred1, fake_label)
+                    fake_image = gen(noise) # $G(z)$
+                    ### DO NOT update G while updating D!
+                    fake_pred1 = disc(fake_image.detach()) # $D(G(z))$
+                    # $\log(1 - D(G(z)))$ # D 입장에서는 Loss가 낮아져야 함.
+                    fake_disc_loss = crit(fake_pred1, fake_label)
 
-                disc_loss = real_disc_loss + fake_disc_loss
+                    disc_loss = real_disc_loss + fake_disc_loss
 
-            disc_optim.zero_grad()
-            disc_scaler.scale(disc_loss).backward()
-            disc_scaler.step(disc_optim)
-            disc_scaler.update()
+                disc_optim.zero_grad()
+                disc_scaler.scale(disc_loss).backward()
+                disc_scaler.step(disc_optim)
+                disc_scaler.update()
 
-            accum_real_disc_loss += real_disc_loss.item()
-            accum_fake_disc_loss += fake_disc_loss.item()
-            accum_gen_loss += gen_loss.item()
+                accum_real_disc_loss += real_disc_loss.item()
+                accum_fake_disc_loss += fake_disc_loss.item()
 
         real_pred_mean = torch.sigmoid(real_pred).mean()
         fake_pred1_mean = torch.sigmoid(fake_pred1).mean()
@@ -123,7 +127,7 @@ if __name__ == "__main__":
         print(f"[ {epoch}/{args.n_epochs} ]", end="")
         print(f"[ Real D loss: {accum_real_disc_loss / len(train_dl):.3f} ]", end="")
         print(f"[ Fake D loss: {accum_fake_disc_loss / len(train_dl):.3f} ]", end="")
-        print(f"[ G loss: {accum_gen_loss / len(train_dl) / args.gen_weight:.3f} ]", end="")
+        print(f"[ G loss: {accum_gen_loss / len(train_dl):.3f} ]", end="")
         print(f"[ D: R as R: {real_pred_mean:.3f} ]", end="")
         print(f"[ D: F as F: {fake_pred1_mean:.3f} ]", end="")
         print(f"[ G: F as R: {fake_pred2_mean:.3f}]", end="")
