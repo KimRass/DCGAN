@@ -66,7 +66,7 @@ if __name__ == "__main__":
 
     crit = nn.BCEWithLogitsLoss()
 
-    best_diff = math.inf
+    best_value = math.inf
     prev_ckpt_path = ".pth"
     for epoch in range(1, args.n_epochs + 1):
         accum_real_disc_loss = 0
@@ -122,7 +122,8 @@ if __name__ == "__main__":
         real_pred_mean = torch.sigmoid(real_pred).mean()
         fake_pred1_mean = torch.sigmoid(fake_pred1).mean()
         fake_pred2_mean = torch.sigmoid(fake_pred2).mean()
-        diff = torch.abs(real_pred_mean + fake_pred1_mean + fake_pred2_mean - 0.5 * 3)
+        # value = torch.abs(real_pred_mean + fake_pred1_mean + fake_pred2_mean - 0.5 * 3)
+        value = (real_pred_mean - 0.5) ** 2 + (fake_pred1_mean - 0.5) ** 2 + (fake_pred2_mean - 0.5) ** 2
 
         print(f"[ {epoch}/{args.n_epochs} ]", end="")
         # print(f"[ Real D loss: {accum_real_disc_loss / len(train_dl):.3f} ]", end="")
@@ -131,7 +132,7 @@ if __name__ == "__main__":
         print(f"[ D: R as R: {real_pred_mean:.3f} ]", end="")
         print(f"[ D: F as F: {fake_pred1_mean:.3f} ]", end="")
         print(f"[ G: F as R: {fake_pred2_mean:.3f}]", end="")
-        print(f"[ Metric: {diff:.3f}]")
+        print(f"[ Metric: {value:.3f}]")
 
         gen.eval()
         with torch.no_grad():
@@ -142,7 +143,7 @@ if __name__ == "__main__":
             )
             save_image(grid, path=f"{Path(__file__).parent}/generated_images/epoch_{epoch}.jpg")
 
-        if diff < best_diff:
+        if value < best_value:
             cur_ckpt_path = f"{Path(__file__).parent}/checkpoints/epoch_{epoch}.pth"
             save_checkpoint(
                 epoch=epoch,
@@ -152,11 +153,11 @@ if __name__ == "__main__":
                 gen_optim=gen_optim,
                 disc_scaler=disc_scaler,
                 gen_scaler=gen_scaler,
-                diff=diff,
+                value=value,
                 save_path=cur_ckpt_path,
             )
             Path(prev_ckpt_path).unlink(missing_ok=True)
             print(f"Saved checkpoint.")
 
-            best_diff = diff
+            best_value = value
             prev_ckpt_path = cur_ckpt_path
