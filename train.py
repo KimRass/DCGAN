@@ -54,7 +54,7 @@ if __name__ == "__main__":
 
     crit = nn.BCEWithLogitsLoss()
 
-    best_loss = math.inf
+    best_diff = math.inf
     prev_ckpt_path = ".pth"
     for epoch in range(1, args.n_epochs + 1):
         accum_real_disc_loss = 0
@@ -101,13 +101,17 @@ if __name__ == "__main__":
             accum_fake_disc_loss += fake_disc_loss.item()
             accum_gen_loss += gen_loss.item()
 
+        pred_sum = real_pred.mean() + fake_pred1.mean() + fake_pred2.mean()
+        diff = torch.abs(pred_sum - 0.5 * 3)
+
         print(f"[ {epoch}/{args.n_epochs} ][ {get_elapsed_time(start_time)} ]", end="")
         print(f"[ Real D loss: {accum_real_disc_loss / len(train_dl):.3f} ]", end="")
         print(f"[ Fake D loss: {accum_fake_disc_loss / len(train_dl):.3f} ]", end="")
         print(f"[ G loss: {accum_gen_loss / len(train_dl):.3f} ]", end="")
-        print(f"[ Real-real: {real_pred.mean():.3f} ]", end="")
-        print(f"[ Fake-fake: {fake_pred1.mean():.3f} ]", end="")
-        print(f"[ Fake-real: {fake_pred2.mean():.3f}]")
+        print(f"[ RtoR: {real_pred.mean():.3f} ]", end="")
+        print(f"[ FtoF: {fake_pred1.mean():.3f} ]", end="")
+        print(f"[ FtoR: {fake_pred2.mean():.3f}]", end="")
+        print(f"[ Prediction sum: {diff:.3f}]")
 
         gen.eval()
         with torch.no_grad():
@@ -118,12 +122,11 @@ if __name__ == "__main__":
             )
             save_image(grid, path=f"{Path(__file__).parent}/generated_images/epoch_{epoch}.jpg")
 
-        # tot_loss = accum_real_disc_loss + accum_gen_loss
-        # if tot_loss < best_loss:
-        cur_ckpt_path = f"{Path(__file__).parent}/checkpoints/epoch_{epoch}.pth"
-        save_gen(gen=gen, save_path=cur_ckpt_path)
-        # Path(prev_ckpt_path).unlink(missing_ok=True)
-        print(f"Saved checkpoint.")
+        if diff < best_diff:
+            cur_ckpt_path = f"{Path(__file__).parent}/checkpoints/epoch_{epoch}.pth"
+            save_gen(gen=gen, save_path=cur_ckpt_path)
+            Path(prev_ckpt_path).unlink(missing_ok=True)
+            print(f"Saved checkpoint.")
 
-        # best_loss = tot_loss
-        # prev_ckpt_path = cur_ckpt_path
+            best_diff = diff
+            prev_ckpt_path = cur_ckpt_path
