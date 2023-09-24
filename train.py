@@ -18,9 +18,8 @@ from utils import (
     save_image,
     get_device,
     save_checkpoint,
+    save_gen,
     get_elapsed_time,
-    freeze_model,
-    unfreeze_model,
 )
 
 
@@ -51,8 +50,6 @@ if __name__ == "__main__":
     disc_optim = Adam(params=disc.parameters(), lr=args.disc_lr, betas=(config.BETA1, config.BETA2))
     gen_optim = Adam(params=gen.parameters(), lr=args.gen_lr, betas=(config.BETA1, config.BETA2))
 
-    # disc_scaler = GradScaler()
-    # gen_scaler = GradScaler()
     scaler = GradScaler()
 
     train_dl = get_celeba_dataloader(
@@ -94,9 +91,6 @@ if __name__ == "__main__":
                 disc_loss = (real_disc_loss + fake_disc_loss) / 2
 
             disc_optim.zero_grad()
-            # disc_scaler.scale(disc_loss).backward()
-            # disc_scaler.step(disc_optim)
-            # disc_scaler.update()
             scaler.scale(disc_loss).backward()
             scaler.step(disc_optim)
 
@@ -109,9 +103,6 @@ if __name__ == "__main__":
                 gen_loss = crit(fake_pred2, real_label) # G 입장에서는 Loss가 낮아져야 함.
 
             gen_optim.zero_grad()
-            # gen_scaler.scale(gen_loss).backward()
-            # gen_scaler.step(gen_optim)
-            # gen_scaler.update()
             scaler.scale(gen_loss).backward()
             scaler.step(gen_optim)
 
@@ -122,10 +113,6 @@ if __name__ == "__main__":
         print(f"[ {epoch}/{args.n_epochs} ]", end="")
         print(f"[ D loss: {accum_disc_loss / len(train_dl):.3f} ]", end="")
         print(f"[ G loss: {accum_gen_loss / len(train_dl):.3f} ]")
-        # print(f"[ D: R as R: {real_pred_mean:.3f} ]", end="")
-        # print(f"[ D: F as F: {fake_pred1_mean:.3f} ]", end="")
-        # print(f"[ G: F as R: {fake_pred2_mean:.3f}]", end="")
-        # print(f"[ Metric: {value:.3f}]")
 
         gen.eval()
         with torch.no_grad():
@@ -134,25 +121,21 @@ if __name__ == "__main__":
             grid = batched_image_to_grid(
                 fake_image[: 64, ...], n_cols=8, mean=config.MEAN, std=config.STD,
             )
-            save_image(grid, path=f"{Path(__file__).parent}/generated_images/epoch_{epoch}.jpg")
-
-        accum_tot_loss = accum_disc_loss + accum_gen_loss
-        if accum_tot_loss < best_loss:
-            cur_ckpt_path = f"{Path(__file__).parent}/checkpoints/epoch_{epoch}.pth"
-            save_checkpoint(
-                epoch=epoch,
-                disc=disc,
-                gen=gen,
-                disc_optim=disc_optim,
-                gen_optim=gen_optim,
-                # disc_scaler=disc_scaler,
-                # gen_scaler=gen_scaler,
-                scaler=scaler,
-                loss=accum_tot_loss,
-                save_path=cur_ckpt_path,
+            save_image(
+                grid, path=f"{Path(__file__).parent}/generated_images/celeba_epoch_{epoch}.jpg"
             )
-            Path(prev_ckpt_path).unlink(missing_ok=True)
-            print(f"Saved checkpoint.")
 
-            best_loss = accum_tot_loss
-            prev_ckpt_path = cur_ckpt_path
+        cur_ckpt_path = f"{Path(__file__).parent}/checkpoints/celeba_epoch_{epoch}.pth"
+        save_checkpoint(
+            epoch=epoch,
+            disc=disc,
+            gen=gen,
+            disc_optim=disc_optim,
+            gen_optim=gen_optim,
+            scaler=scaler,
+            save_path=cur_ckpt_path,
+        )
+        Path(prev_ckpt_path).unlink(missing_ok=True)
+        prev_ckpt_path = cur_ckpt_path
+
+        save_gen(gen=gen, save_path=f"{Path(__file__).parent}/pretrained/celeba_epoch_{epoch}.pth")
