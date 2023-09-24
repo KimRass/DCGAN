@@ -88,7 +88,8 @@ def get_device():
 
 
 def save_checkpoint(
-    epoch, disc, gen, disc_optim, gen_optim, disc_scaler, gen_scaler, value, save_path
+    # epoch, disc, gen, disc_optim, gen_optim, disc_scaler, gen_scaler, loss, save_path
+    epoch, disc, gen, disc_optim, gen_optim, scaler, loss, save_path
 ):
     Path(save_path).parent.mkdir(parents=True, exist_ok=True)
     ckpt = {
@@ -97,9 +98,10 @@ def save_checkpoint(
         "D": disc.state_dict(),
         "D_optimizer": disc_optim.state_dict(),
         "G_optimizer": gen_optim.state_dict(),
-        "D_scaler": disc_scaler.state_dict(),
-        "G_scaler": gen_scaler.state_dict(),
-        "valueerence": value,
+        # "D_scaler": disc_scaler.state_dict(),
+        # "G_scaler": gen_scaler.state_dict(),
+        "scaler": scaler.state_dict(),
+        "best_loss": loss,
     }
     torch.save(ckpt, str(save_path))
 

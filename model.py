@@ -13,11 +13,17 @@ class FractionallyStridedConvBlock(nn.Module):
         self.batchnorm = batchnorm
 
         self.conv = nn.ConvTranspose2d(
-            in_channels, out_channels, kernel_size=5, stride=2, padding=2, output_padding=1, bias=False
+            in_channels,
+            out_channels,
+            kernel_size=5,
+            stride=2,
+            padding=2,
+            output_padding=1,
+            bias=False,
         )
-        # "Third is Batch Normalization. Directly applying batchnorm to all layers however, resulted in sample
-        # oscillation and model instability. This was avoided by not applying batchnorm to the generator
-        # output layer and the discriminator input layer."
+        # "Third is Batch Normalization. Directly applying batchnorm to all layers however, resulted
+        # in sample oscillation and model instability. This was avoided by not applying batchnorm
+        # to the generator output layer and the discriminator input layer."
         if batchnorm:
             self.norm = nn.BatchNorm2d(out_channels)
 
@@ -25,9 +31,9 @@ class FractionallyStridedConvBlock(nn.Module):
         x = self.conv(x)
         if self.batchnorm:
             x = self.norm(x)
-        # "The ReLU activation is used in the generator with the exception of the output layer which uses
-        # the Tanh function. We observed that using a bounded activation allowed the model to learn
-        # more quickly to saturate and cover the color space of the training distribution."
+        # "The ReLU activation is used in the generator with the exception of the output layer which
+        # uses the Tanh function. We observed that using a bounded activation allowed the model
+        # to learn more quickly to saturate and cover the color space of the training distribution
         # for higher resolution"
         if self.activ == "relu":
             x = torch.relu(x)
@@ -38,7 +44,8 @@ class FractionallyStridedConvBlock(nn.Module):
 
 def _init_weights(model):
     for m in model.modules():
-        # "All weights were initialized from a zero-centered Normal distribution with standard deviation 0.02."
+        # "All weights were initialized from a zero-centered Normal distribution with standard
+        # deviation 0.02."
         if isinstance(m, (nn.ConvTranspose2d, nn.BatchNorm2d, nn.Linear, nn.Conv2d)):
             m.weight.data.normal_(0, 0.02)
 
@@ -47,11 +54,11 @@ class Generator(nn.Module):
     def __init__(self):
         super().__init__()
 
-        # "A 100 dimensional uniform distribution `Z` is projected to a small spatial extent convolutional representation
-        # with many feature maps."
+        # "A 100 dimensional uniform distribution `Z` is projected to a small spatial extent
+        # convolutional representation with many feature maps."
         self.proj = nn.Linear(100, 1024 * 4 * 4)
-        # "A series of four fractionally-strided convolutions then convert this high level representation
-        # into a $64 \times 64$ pixel image. No fully connected or pooling layers are used."
+        # "A series of four fractionally-strided convolutions then convert this high level
+        # representation into a 64 × 64 pixel image. No fully connected or pooling layers are used."
 
         self.block1 = FractionallyStridedConvBlock(1024, 512, activ="relu")
         self.block2 = FractionallyStridedConvBlock(512, 256, activ="relu")
@@ -61,9 +68,9 @@ class Generator(nn.Module):
         _init_weights(self)
 
     def forward(self, x): # `(b, 100)`
-        # "The first layer of the GAN, which takes a uniform noise distribution `Z` as input, could be called
-        # fully connected as it is just a matrix multiplication, but the result is reshaped into
-        # a 4-dimensional tensor and used as the start of the convolution stack."
+        # "The first layer of the GAN, which takes a uniform noise distribution `Z` as input, could
+        # be called fully connected as it is just a matrix multiplication, but the result is
+        # reshaped into a 4-dimensional tensor and used as the start of the convolution stack."
         x = self.proj(x) # `(b, 1024 * 4 * 4)`
         x = F.relu(x)
         x = x.view(-1, 1024, 4, 4) # `(b, 1024, 4, 4)`
@@ -83,7 +90,9 @@ class StridedConvBlock(nn.Module):
         self.out_channels = out_channels
         self.batchnorm = batchnorm
 
-        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=5, stride=2, padding=2, bias=False)
+        self.conv = nn.Conv2d(
+            in_channels, out_channels, kernel_size=5, stride=2, padding=2, bias=False,
+        )
         if batchnorm:
             self.norm = nn.BatchNorm2d(out_channels)
 
@@ -130,4 +139,3 @@ if __name__ == "__main__":
     x = torch.randn(2, 3, 64, 64)
     disc = Discriminator()
     disc(x).shape
-
