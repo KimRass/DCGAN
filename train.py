@@ -121,7 +121,7 @@ if __name__ == "__main__":
 
         print(f"[ {epoch}/{args.n_epochs} ]", end="")
         print(f"[ D loss: {accum_disc_loss / len(train_dl):.3f} ]", end="")
-        print(f"[ G loss: {accum_gen_loss / len(train_dl):.3f} ]", end="")
+        print(f"[ G loss: {accum_gen_loss / len(train_dl):.3f} ]")
         # print(f"[ D: R as R: {real_pred_mean:.3f} ]", end="")
         # print(f"[ D: F as F: {fake_pred1_mean:.3f} ]", end="")
         # print(f"[ G: F as R: {fake_pred2_mean:.3f}]", end="")

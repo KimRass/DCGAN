@@ -4,8 +4,10 @@ from utils import get_image_dataset_mean_and_std
 IMG_SIZE = 64
 LATENT_DIM = 100
 # get_image_dataset_mean_and_std("/Users/jongbeomkim/Documents/datasets/celeba/img_align_celeba")
-MEAN = (0.506, 0.425, 0.383)
-STD = (0.311, 0.291, 0.289)
+# MEAN = (0.506, 0.425, 0.383)
+# STD = (0.311, 0.291, 0.289)
+MEAN = (0.5, 0.5, 0.5)
+STD = (0.5, 0.5, 0.5)
 
 ### Optimizer
 # "We used the Adam optimizer with tuned hyperparameters. We used 0.0002 for learning rate. We found
