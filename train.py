@@ -33,8 +33,10 @@ def get_args():
     # All models were trained with mini-batch stochastic gradient descent (SGD) with a mini-batch
     # size of 128."
     parser.add_argument("--batch_size", type=int, required=False, default=128)
-    parser.add_argument("--lr", type=float, required=False, default=0.0002)
-    parser.add_argument("--gen_weight", type=float, required=False, default=1)
+    parser.add_argument("--disc_lr", type=float, required=False, default=0.0002)
+    parser.add_argument("--gen_lr", type=float, required=False, default=0.0002)
+    # parser.add_argument("--lr", type=float, required=False, default=0.0002)
+    # parser.add_argument("--gen_weight", type=float, required=False, default=1)
 
     args = parser.parse_args()
     return args
@@ -47,8 +49,8 @@ if __name__ == "__main__":
     gen = Generator().to(DEVICE)
     disc = Discriminator().to(DEVICE)
 
-    disc_optim = Adam(params=disc.parameters(), lr=args.lr, betas=(config.BETA1, config.BETA2))
-    gen_optim = Adam(params=gen.parameters(), lr=args.lr, betas=(config.BETA1, config.BETA2))
+    disc_optim = Adam(params=disc.parameters(), lr=args.disc_lr, betas=(config.BETA1, config.BETA2))
+    gen_optim = Adam(params=gen.parameters(), lr=args.gen_lr, betas=(config.BETA1, config.BETA2))
 
     scaler = GradScaler()
 
@@ -100,7 +102,7 @@ if __name__ == "__main__":
                 fake_image = gen(noise) # $G(z)$
                 fake_pred2 = disc(fake_image) # $D(G(z))$
                 gen_loss = crit(fake_pred2, real_label) # G 입장에서는 Loss가 낮아져야 함.
-                gen_loss *= args.gen_weight
+                # gen_loss *= args.gen_weight
             gen_optim.zero_grad()
             scaler.scale(gen_loss).backward()
             scaler.step(gen_optim)
@@ -111,7 +113,8 @@ if __name__ == "__main__":
 
         print(f"[ {epoch}/{args.n_epochs} ]", end="")
         print(f"[ D loss: {accum_disc_loss / len(train_dl):.3f} ]", end="")
-        print(f"[ G loss: {accum_gen_loss / len(train_dl) / args.gen_weight:.3f} ]")
+        # print(f"[ G loss: {accum_gen_loss / len(train_dl) / args.gen_weight:.3f} ]")
+        print(f"[ G loss: {accum_gen_loss / len(train_dl):.3f} ]")
 
         gen.eval()
         with torch.no_grad():
