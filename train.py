@@ -124,7 +124,7 @@ if __name__ == "__main__":
                 grid, path=f"{Path(__file__).parent}/generated_images/celeba_epoch_{epoch}.jpg"
             )
 
-        cur_ckpt_path = f"{Path(__file__).parent}/checkpoints/celeba_epoch_{epoch}.pth"
+        cur_ckpt_path = f"{Path(__file__).parent}/checkpoints/ckpt_celeba_epoch_{epoch}.pth"
         save_checkpoint(
             epoch=epoch,
             disc=disc,
@@ -137,4 +137,6 @@ if __name__ == "__main__":
         Path(prev_ckpt_path).unlink(missing_ok=True)
         prev_ckpt_path = cur_ckpt_path
 
-        save_gen(gen=gen, save_path=f"{Path(__file__).parent}/pretrained/celeba_epoch_{epoch}.pth")
+        save_gen(
+            gen=gen, save_path=f"{Path(__file__).parent}/pretrained/gen_celeba_epoch_{epoch}.pth",
+        )
