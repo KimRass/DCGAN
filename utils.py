@@ -87,24 +87,6 @@ def get_device():
     return device
 
 
-def save_checkpoint(epoch, disc, gen, disc_optim, gen_optim, scaler, save_path):
-    Path(save_path).parent.mkdir(parents=True, exist_ok=True)
-    ckpt = {
-        "epoch": epoch,
-        "G": gen.state_dict(),
-        "D": disc.state_dict(),
-        "D_optimizer": disc_optim.state_dict(),
-        "G_optimizer": gen_optim.state_dict(),
-        "scaler": scaler.state_dict(),
-    }
-    torch.save(ckpt, str(save_path))
-
-
-def save_gen(gen, save_path):
-    Path(save_path).parent.mkdir(parents=True, exist_ok=True)
-    torch.save(gen.state_dict(), str(save_path))
-
-
 def get_elapsed_time(start_time):
     return timedelta(seconds=round(time() - start_time))
 

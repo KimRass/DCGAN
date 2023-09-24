@@ -17,8 +17,6 @@ from utils import (
     batched_image_to_grid,
     save_image,
     get_device,
-    save_checkpoint,
-    save_gen,
     get_elapsed_time,
 )
 
@@ -40,6 +38,35 @@ def get_args():
 
     args = parser.parse_args()
     return args
+
+
+@torch.no_grad()
+def generate_samples(gen, batch_size, n_cols, device):
+    noise = torch.randn(size=(batch_size, config.LATENT_DIM), device=device)
+    gen.eval()
+    with torch.no_grad():
+        fake_image = gen(noise).detach().cpu()
+        grid = batched_image_to_grid(fake_image, n_cols=n_cols, mean=config.MEAN, std=config.STD)
+    gen.train()
+    return grid
+
+
+def save_checkpoint(epoch, disc, gen, disc_optim, gen_optim, scaler, save_path):
+    Path(save_path).parent.mkdir(parents=True, exist_ok=True)
+    ckpt = {
+        "epoch": epoch,
+        "G": gen.state_dict(),
+        "D": disc.state_dict(),
+        "D_optimizer": disc_optim.state_dict(),
+        "G_optimizer": gen_optim.state_dict(),
+        "scaler": scaler.state_dict(),
+    }
+    torch.save(ckpt, str(save_path))
+
+
+def save_gen(gen, save_path):
+    Path(save_path).parent.mkdir(parents=True, exist_ok=True)
+    torch.save(gen.state_dict(), str(save_path))
 
 
 if __name__ == "__main__":
@@ -116,16 +143,10 @@ if __name__ == "__main__":
         # print(f"[ G loss: {accum_gen_loss / len(train_dl) / args.gen_weight:.3f} ]")
         print(f"[ G loss: {accum_gen_loss / len(train_dl):.3f} ]")
 
-        gen.eval()
-        with torch.no_grad():
-            fake_image = gen(noise)
-            fake_image = fake_image.detach().cpu()
-            grid = batched_image_to_grid(
-                fake_image[: 64, ...], n_cols=8, mean=config.MEAN, std=config.STD,
-            )
-            save_image(
-                grid, path=f"{Path(__file__).parent}/generated_images/celeba_epoch_{epoch}.jpg"
-            )
+        samples = generate_samples(gen=gen, batch_size=64, n_cols=8, device=DEVICE)
+        save_image(
+            samples, path=f"{Path(__file__).parent}/samples/celeba_epoch_{epoch}.jpg"
+        )
 
         cur_ckpt_path = f"{Path(__file__).parent}/checkpoints/ckpt_celeba_epoch_{epoch}.pth"
         save_checkpoint(
