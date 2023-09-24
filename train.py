@@ -111,7 +111,7 @@ if __name__ == "__main__":
 
         print(f"[ {epoch}/{args.n_epochs} ]", end="")
         print(f"[ D loss: {accum_disc_loss / len(train_dl):.3f} ]", end="")
-        print(f"[ G loss: {accum_gen_loss / len(train_dl):.3f} ]")
+        print(f"[ G loss: {accum_gen_loss / len(train_dl) / args.gen_weight:.3f} ]")
 
         gen.eval()
         with torch.no_grad():
