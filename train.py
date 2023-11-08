@@ -13,12 +13,7 @@ from time import time
 import config
 from model import Generator, Discriminator
 from celeba import get_celeba_dataloader
-from utils import (
-    batched_image_to_grid,
-    save_image,
-    get_device,
-    get_elapsed_time,
-)
+from utils import batched_image_to_grid, save_image, get_device
 
 
 def get_args():
@@ -27,26 +22,25 @@ def get_args():
     parser.add_argument("--data_dir", type=str, required=True)
     parser.add_argument("--n_workers", type=int, required=True)
     parser.add_argument("--n_epochs", type=int, required=False, default=30) # "30"
-    parser.add_argument("--img_size", type=int, required=False, default=64)
     # All models were trained with mini-batch stochastic gradient descent (SGD) with a mini-batch
     # size of 128."
     parser.add_argument("--batch_size", type=int, required=False, default=128)
-    parser.add_argument("--disc_lr", type=float, required=False, default=0.0002)
+    parser.add_argument("--disc_lr", type=float, required=False, default=0.00014)
     parser.add_argument("--gen_lr", type=float, required=False, default=0.0002)
-    # parser.add_argument("--lr", type=float, required=False, default=0.0002)
-    # parser.add_argument("--gen_weight", type=float, required=False, default=1)
 
     args = parser.parse_args()
     return args
 
 
 @torch.no_grad()
-def generate_samples(gen, batch_size, n_cols, device):
+def generate_images(gen, batch_size, device):
     noise = torch.randn(size=(batch_size, config.LATENT_DIM), device=device)
     gen.eval()
     with torch.no_grad():
         fake_image = gen(noise).detach().cpu()
-        grid = batched_image_to_grid(fake_image, n_cols=n_cols, mean=config.MEAN, std=config.STD)
+        grid = batched_image_to_grid(
+            fake_image, n_cols=int(batch_size ** 0.5), mean=config.MEAN, std=config.STD,
+        )
     gen.train()
     return grid
 
@@ -129,7 +123,6 @@ if __name__ == "__main__":
                 fake_image = gen(noise) # $G(z)$
                 fake_pred2 = disc(fake_image) # $D(G(z))$
                 gen_loss = crit(fake_pred2, real_label) # G 입장에서는 Loss가 낮아져야 함.
-                # gen_loss *= args.gen_weight
             gen_optim.zero_grad()
             scaler.scale(gen_loss).backward()
             scaler.step(gen_optim)
@@ -140,10 +133,9 @@ if __name__ == "__main__":
 
         print(f"[ {epoch}/{args.n_epochs} ]", end="")
         print(f"[ D loss: {accum_disc_loss / len(train_dl):.3f} ]", end="")
-        # print(f"[ G loss: {accum_gen_loss / len(train_dl) / args.gen_weight:.3f} ]")
         print(f"[ G loss: {accum_gen_loss / len(train_dl):.3f} ]")
 
-        samples = generate_samples(gen=gen, batch_size=64, n_cols=8, device=DEVICE)
+        samples = generate_images(gen=gen, batch_size=64, device=DEVICE)
         save_image(
             samples, path=f"{Path(__file__).parent}/samples/celeba_epoch_{epoch}.jpg"
         )
