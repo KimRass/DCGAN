@@ -65,8 +65,6 @@ if __name__ == "__main__":
     train_dl = get_celeba_dataloader(
         data_dir=args.data_dir,
         img_size=config.IMG_SIZE,
-        mean=config.MEAN,
-        std=config.STD,
         batch_size=args.batch_size,
         n_workers=args.n_workers,
     )
