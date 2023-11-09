@@ -13,7 +13,7 @@ from time import time
 import config
 from model import Generator, Discriminator
 from celeba import get_celeba_dataloader
-from utils import batched_image_to_grid, save_image, get_device
+from utils import get_noise, save_image, get_device, generate_images
 
 
 def get_args():
@@ -30,19 +30,6 @@ def get_args():
 
     args = parser.parse_args()
     return args
-
-
-@torch.no_grad()
-def generate_images(gen, batch_size, device):
-    noise = torch.randn(size=(batch_size, config.LATENT_DIM), device=device)
-    gen.eval()
-    with torch.no_grad():
-        fake_image = gen(noise).detach().cpu()
-        grid = batched_image_to_grid(
-            fake_image, n_cols=int(batch_size ** 0.5), mean=config.MEAN, std=config.STD,
-        )
-    gen.train()
-    return grid
 
 
 def save_checkpoint(epoch, disc, gen, disc_optim, gen_optim, scaler, save_path):
@@ -97,7 +84,9 @@ if __name__ == "__main__":
 
             real_label = torch.ones(size=(args.batch_size, 1), device=DEVICE)
             fake_label = torch.zeros(size=(args.batch_size, 1), device=DEVICE)
-            noise = torch.randn(size=(args.batch_size, config.LATENT_DIM), device=DEVICE) # $z$
+            noise = get_noise(
+                batch_size=args.batch_size, latent_dim=config.LATENT_DIM, device=DEVICE,
+            ) # $z$
 
             ### Update D.
             with torch.autocast(device_type=DEVICE.type, dtype=torch.float16, enabled=True):
@@ -135,9 +124,11 @@ if __name__ == "__main__":
         print(f"[ D loss: {accum_disc_loss / len(train_dl):.3f} ]", end="")
         print(f"[ G loss: {accum_gen_loss / len(train_dl):.3f} ]")
 
-        samples = generate_images(gen=gen, batch_size=64, device=DEVICE)
+        noise = get_noise(batch_size=args.batch_size, latent_dim=config.LATENT_DIM, device=DEVICE)
+        gen_image = generate_images(gen=gen, noise=noise, batch_size=64)
         save_image(
-            samples, path=f"{Path(__file__).parent}/samples/celeba_epoch_{epoch}.jpg"
+            gen_image,
+            path=f"{Path(__file__).parent}/generated_images/during_training/celeba_epoch_{epoch}.jpg",
         )
 
         cur_ckpt_path = f"{Path(__file__).parent}/checkpoints/ckpt_celeba_epoch_{epoch}.pth"

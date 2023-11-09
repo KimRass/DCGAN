@@ -7,7 +7,7 @@ import argparse
 
 import config
 from model import Generator
-from utils import get_device, save_image
+from utils import get_device, save_image, get_noise
 from train import generate_images
 
 
@@ -16,10 +16,20 @@ def get_args():
 
     parser.add_argument("--ckpt_path", type=str, required=True)
     parser.add_argument("--batch_size", type=int, required=True)
+    parser.add_argument("--n_images", type=int, required=True)
     parser.add_argument("--n_cpus", type=int, required=False, default=0)
 
     args = parser.parse_args()
     return args
+
+
+def get_max_index(save_dir):
+    img_paths = list(Path(save_dir).glob("celeba_*.jpg"))
+    if img_paths:
+        max_idx = max([int(i.stem.rsplit("_")[1]) for i in img_paths])
+    else:
+        max_idx = 0
+    return max_idx
 
 
 if __name__ == "__main__":
@@ -31,13 +41,11 @@ if __name__ == "__main__":
     state_dict = torch.load(args.ckpt_path, map_location=DEVICE)
     gen.load_state_dict(state_dict, strict=True)
 
-    gen.eval()
-    with torch.no_grad():
-        for idx in range(1, args.n_images + 1):
-            noise = torch.randn(size=(args.batch_size, config.LATENT_DIM), device=DEVICE)
-            gen_image = gen(noise)
+    SAVE_DIR = Path(__file__).parent/"generated_images"
+    SAVE_DIR.mkdir(parents=True, exist_ok=True)
+    max_idx = get_max_index(SAVE_DIR)
 
-            gen_image = generate_images(gen=gen, batch_size=64, device=DEVICE)
-            save_image(
-                gen_image, path=f"{Path(__file__).parent}/generated_images/celeba_{idx}.jpg"
-            )
+    for idx in range(max_idx + 1, max_idx + 1 + args.n_images):
+        noise = get_noise(batch_size=args.batch_size, latent_dim=config.LATENT_DIM, device=DEVICE)
+        gen_image = generate_images(gen=gen, noise=noise, batch_size=args.batch_size)
+        save_image(gen_image, path=SAVE_DIR/"celeba_{idx}.jpg")
