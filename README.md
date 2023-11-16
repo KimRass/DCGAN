@@ -6,20 +6,20 @@
 ## Generated Image Samples (CelebA 64×64)
 ```bash
 # e.g.,
-    python3 generate_images.py\
-    --ckpt_path="/Users/jongbeomkim/Documents/dcgan/dcgan_celeba.pth"\
-    --batch_size=100\
-    --n_images=10\
-    --n_cpus=0 # Optional
+python3 generate_images.py\
+--ckpt_path="/Users/jongbeomkim/Documents/dcgan/dcgan_celeba.pth"\
+--batch_size=100\
+--n_images=10\
+--n_cpus=0 # Optional
 ```
 - <img src="https://github.com/KimRass/DCGAN/assets/105417680/6d3f0276-0448-4330-a3a7-1b7489b0d21b" width="600">
 - Using interpolation
     ```bash
     # e.g.,
-        python3 interpolate.py\
-        --ckpt_path="/Users/jongbeomkim/Documents/dcgan/dcgan_celeba.pth"\
-        --batch_size=10\
-        --n_images=10\
-        --n_cpus=0 # Optional
+    python3 interpolate.py\
+    --ckpt_path="/Users/jongbeomkim/Documents/dcgan/dcgan_celeba.pth"\
+    --batch_size=10\
+    --n_images=10\
+    --n_cpus=0 # Optional
     ```
     - <img src="https://github.com/KimRass/DCGAN/assets/105417680/88e6751f-58f5-4291-9201-b10a2df65f95" width="600">
