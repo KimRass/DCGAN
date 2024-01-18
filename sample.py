@@ -15,8 +15,8 @@ def get_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--ckpt_path", type=str, required=True)
-    parser.add_argument("--batch_size", type=int, required=True)
-    parser.add_argument("--n_images", type=int, required=True)
+    parser.add_argument("--n_cells", type=int, required=True)
+    parser.add_argument("--n_iters", type=int, required=True)
     parser.add_argument("--n_cpus", type=int, required=False, default=0)
 
     args = parser.parse_args()
@@ -41,11 +41,11 @@ if __name__ == "__main__":
     state_dict = torch.load(args.ckpt_path, map_location=DEVICE)
     gen.load_state_dict(state_dict, strict=True)
 
-    SAVE_DIR = Path(__file__).parent/"generated_images"
+    SAVE_DIR = Path(__file__).parent/"samples/grid"
     SAVE_DIR.mkdir(parents=True, exist_ok=True)
     max_idx = get_max_index(SAVE_DIR)
 
-    for idx in range(max_idx + 1, max_idx + 1 + args.n_images):
-        noise = get_noise(batch_size=args.batch_size, latent_dim=config.LATENT_DIM, device=DEVICE)
-        gen_image = generate_images(gen=gen, noise=noise, batch_size=args.batch_size)
+    for idx in range(max_idx + 1, max_idx + 1 + args.n_iters):
+        noise = get_noise(batch_size=args.n_cells, latent_dim=config.LATENT_DIM, device=DEVICE)
+        gen_image = generate_images(gen=gen, noise=noise, batch_size=args.n_cells)
         save_image(gen_image, path=SAVE_DIR/"celeba_{idx}.jpg")
