@@ -7,19 +7,28 @@ import argparse
 
 import config
 from model import Generator
-from utils import get_device, save_image, get_noise
-from train import generate_images
+from utils import get_device, save_image
 
 
-def get_args():
+def get_args(to_upperse=True):
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--ckpt_path", type=str, required=True)
-    parser.add_argument("--n_cells", type=int, required=True)
+    parser.add_argument(
+        "--mode", type=str, required=True, choices=["grid", "interpolation"],
+    )
+    parser.add_argument("--model_params", type=str, required=True)
+    parser.add_argument("--batch_size", type=int, required=True)
     parser.add_argument("--n_iters", type=int, required=True)
     parser.add_argument("--n_cpus", type=int, required=False, default=0)
 
     args = parser.parse_args()
+
+    if to_upperse:
+        args_dict = vars(args)
+        new_args_dict = dict()
+        for k, v in args_dict.items():
+            new_args_dict[k.upper()] = v
+        args = argparse.Namespace(**new_args_dict)    
     return args
 
 
@@ -37,15 +46,21 @@ if __name__ == "__main__":
 
     DEVICE = get_device()
 
-    gen = Generator().to(DEVICE)
-    state_dict = torch.load(args.ckpt_path, map_location=DEVICE)
+    gen = Generator(latent_dim=config.LATENT_DIM).to(DEVICE)
+    state_dict = torch.load(args.MODEL_PARAMS, map_location=DEVICE)
     gen.load_state_dict(state_dict, strict=True)
 
-    SAVE_DIR = Path(__file__).parent/"samples/grid"
+    SAVE_DIR = Path(__file__).parent/f"samples/{args.MODE}"
     SAVE_DIR.mkdir(parents=True, exist_ok=True)
     max_idx = get_max_index(SAVE_DIR)
 
-    for idx in range(max_idx + 1, max_idx + 1 + args.n_iters):
-        noise = get_noise(batch_size=args.n_cells, latent_dim=config.LATENT_DIM, device=DEVICE)
-        gen_image = generate_images(gen=gen, noise=noise, batch_size=args.n_cells)
-        save_image(gen_image, path=SAVE_DIR/"celeba_{idx}.jpg")
+    for idx in range(max_idx + 1, max_idx + 1 + args.N_ITERS):
+        if args.MODE == "grid":
+            gen_image = gen.sample(
+                batch_size=args.BATCH_SIZE, mean=config.MEAN, std=config.STD, device=DEVICE,
+            )
+        elif args.MODE == "interpolation":
+            gen_image = gen.interpolate_then_sample(
+            batch_size=args.BATCH_SIZE, mean=config.MEAN, std=config.STD, device=DEVICE,
+        )
+        save_image(gen_image, path=SAVE_DIR/f"{args.MODE}_{idx}.jpg")

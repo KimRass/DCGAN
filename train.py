@@ -12,15 +12,15 @@ from time import time
 
 import config
 from model import Generator, Discriminator
-from celeba import get_celeba_dataloader
-from utils import get_noise, save_image, get_device, generate_images
+from celeba import get_celeba_dl
+from utils import save_image, get_device
 
 
-def get_args():
+def get_args(to_upperse=True):
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--data_dir", type=str, required=True)
-    parser.add_argument("--n_workers", type=int, required=True)
+    parser.add_argument("--n_cpus", type=int, required=False, default=0)
     parser.add_argument("--n_epochs", type=int, required=False, default=30) # "30"
     # All models were trained with mini-batch stochastic gradient descent (SGD) with a mini-batch
     # size of 128."
@@ -29,6 +29,13 @@ def get_args():
     parser.add_argument("--gen_lr", type=float, required=False, default=0.0002)
 
     args = parser.parse_args()
+
+    if to_upperse:
+        args_dict = vars(args)
+        new_args_dict = dict()
+        for k, v in args_dict.items():
+            new_args_dict[k.upper()] = v
+        args = argparse.Namespace(**new_args_dict)    
     return args
 
 
@@ -57,34 +64,33 @@ if __name__ == "__main__":
     gen = Generator().to(DEVICE)
     disc = Discriminator().to(DEVICE)
 
-    disc_optim = Adam(params=disc.parameters(), lr=args.disc_lr, betas=(config.BETA1, config.BETA2))
-    gen_optim = Adam(params=gen.parameters(), lr=args.gen_lr, betas=(config.BETA1, config.BETA2))
+    disc_optim = Adam(params=disc.parameters(), lr=args.DISC_LR, betas=(config.BETA1, config.BETA2))
+    gen_optim = Adam(params=gen.parameters(), lr=args.GEN_LR, betas=(config.BETA1, config.BETA2))
 
     scaler = GradScaler()
 
-    train_dl = get_celeba_dataloader(
-        data_dir=args.data_dir,
+    train_dl = get_celeba_dl(
+        data_dir=args.DATA_DIR,
         img_size=config.IMG_SIZE,
-        batch_size=args.batch_size,
-        n_workers=args.n_workers,
+        mean=config.MEAN,
+        std=config.STD,
+        batch_size=args.BATCH_SIZE,
+        n_workers=args.N_CPUS,
     )
 
     crit = nn.BCEWithLogitsLoss()
 
     best_loss = math.inf
     prev_ckpt_path = ".pth"
-    for epoch in range(1, args.n_epochs + 1):
+    for epoch in range(1, args.N_EPOCHS + 1):
         accum_disc_loss = 0
         accum_gen_loss = 0
         start_time = time()
         for step, real_image in enumerate(train_dl, start=1):
             real_image = real_image.to(DEVICE)
 
-            real_label = torch.ones(size=(args.batch_size, 1), device=DEVICE)
-            fake_label = torch.zeros(size=(args.batch_size, 1), device=DEVICE)
-            noise = get_noise(
-                batch_size=args.batch_size, latent_dim=config.LATENT_DIM, device=DEVICE,
-            ) # $z$
+            real_label = torch.ones(size=(args.BATCH_SIZE, 1), device=DEVICE)
+            fake_label = torch.zeros(size=(args.BATCH_SIZE, 1), device=DEVICE)
 
             ### Update D.
             with torch.autocast(device_type=DEVICE.type, dtype=torch.float16, enabled=True):
@@ -92,10 +98,13 @@ if __name__ == "__main__":
                  # $\log(D(x))$ # D 입장에서는 Loss가 낮아져야 함.
                 real_disc_loss = crit(real_pred, real_label)
 
-                fake_image = gen(noise) # $G(z)$
+                fake_image = gen.sample(
+                    batch_size=args.BATCH_SIZE, mean=config.MEAN, std=config.STD, device=DEVICE,
+                ) # $G(z)$
                 ### DO NOT update G while updating D!
                 fake_pred1 = disc(fake_image.detach()) # $D(G(z))$
-                # $\log(1 - D(G(z)))$ # D 입장에서는 Loss가 낮아져야 함.
+                # $\log(1 - D(G(z)))$
+                # # D 입장에서는 Loss가 낮아져야 함.
                 fake_disc_loss = crit(fake_pred1, fake_label)
 
                 disc_loss = (real_disc_loss + fake_disc_loss) / 2
@@ -107,7 +116,9 @@ if __name__ == "__main__":
 
             ### Update G.
             with torch.autocast(device_type=DEVICE.type, dtype=torch.float16, enabled=True):
-                fake_image = gen(noise) # $G(z)$
+                fake_image = gen.sample(
+                    batch_size=args.BATCH_SIZE, mean=config.MEAN, std=config.STD, device=DEVICE,
+                ) # $G(z)$
                 fake_pred2 = disc(fake_image) # $D(G(z))$
                 gen_loss = crit(fake_pred2, real_label) # G 입장에서는 Loss가 낮아져야 함.
             gen_optim.zero_grad()
@@ -118,12 +129,13 @@ if __name__ == "__main__":
 
             scaler.update()
 
-        print(f"[ {epoch}/{args.n_epochs} ]", end="")
+        print(f"[ {epoch}/{args.N_EPOCHS} ]", end="")
         print(f"[ D loss: {accum_disc_loss / len(train_dl):.3f} ]", end="")
         print(f"[ G loss: {accum_gen_loss / len(train_dl):.3f} ]")
 
-        noise = get_noise(batch_size=args.batch_size, latent_dim=config.LATENT_DIM, device=DEVICE)
-        gen_image = generate_images(gen=gen, noise=noise, batch_size=64)
+        gen_image = gen.sample(
+            batch_size=args.BATCH_SIZE, mean=config.MEAN, std=config.STD, device=DEVICE,
+        )
         save_image(
             gen_image,
             path=f"{Path(__file__).parent}/generated_images/during_training/celeba_epoch_{epoch}.jpg",

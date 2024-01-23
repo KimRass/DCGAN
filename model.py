@@ -2,6 +2,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from utils import image_to_grid
+
 
 class FractionallyStridedConvBlock(nn.Module):
     def __init__(self, in_channels, out_channels, activ, batchnorm=True):
@@ -51,12 +53,14 @@ def _init_weights(model):
 
 
 class Generator(nn.Module):
-    def __init__(self):
+    def __init__(self, latent_dim=100):
         super().__init__()
 
-        # "A 100 dimensional uniform distribution `Z` is projected to a small spatial extent
+        # "A 100 dimensional uniform distribution $Z$ is projected to a small spatial extent
         # convolutional representation with many feature maps."
-        self.proj = nn.Linear(100, 1024 * 4 * 4)
+        self.latent_dim = latent_dim
+
+        self.proj = nn.Linear(latent_dim, 1024 * 4 * 4)
         # "A series of four fractionally-strided convolutions then convert this high level
         # representation into a 64 × 64 pixel image. No fully connected or pooling layers are used."
 
@@ -67,19 +71,58 @@ class Generator(nn.Module):
 
         _init_weights(self)
 
-    def forward(self, x): # `(b, 100)`
-        # "The first layer of the GAN, which takes a uniform noise distribution `Z` as input, could
+    def forward(self, x): # (b, 100)
+        # "The first layer of the GAN, which takes a uniform noise distribution $Z$ as input, could
         # be called fully connected as it is just a matrix multiplication, but the result is
         # reshaped into a 4-dimensional tensor and used as the start of the convolution stack."
-        x = self.proj(x) # `(b, 1024 * 4 * 4)`
+        x = self.proj(x) # (b, 1024 * 4 * 4)
         x = F.relu(x)
-        x = x.view(-1, 1024, 4, 4) # `(b, 1024, 4, 4)`
+        x = x.view(-1, 1024, 4, 4) # (b, 1024, 4, 4)
 
-        x = self.block1(x) # `(b, 1024, 4, 4)`
-        x = self.block2(x) # `(b, 512, 8, 8)`
-        x = self.block3(x) # `(b, 256, 16, 16)`
-        x = self.block4(x) # `(b, 128, 32, 32)`
-        return x # `(b, 3, 64, 64)`
+        x = self.block1(x) # (b, 1024, 4, 4)
+        x = self.block2(x) # (b, 512, 8, 8)
+        x = self.block3(x) # (b, 256, 16, 16)
+        x = self.block4(x) # (b, 128, 32, 32)
+        return x # (b, 3, 64, 64)
+
+    def get_noise(self, batch_size, device):
+        return torch.randn(size=(batch_size, self.latent_dim), device=device)
+
+    def interpolate(self, batch_size, noise1, noise2):
+        lambs = torch.linspace(
+            start=0, end=1, steps=10,
+        ).unsqueeze(1).unsqueeze(0)
+        noise = lambs * noise1.unsqueeze(1) + (1 - lambs) * noise2.unsqueeze(1)
+        return noise.view(batch_size * 10, 100)
+
+    @torch.no_grad()
+    def sample(self, batch_size, mean, std, device, n_cols=0):
+        self.eval()
+
+        noise = self.get_noise(batch_size=batch_size, device=device)
+        gen_image = self(noise.detach())
+        n_cols = int(batch_size ** 0.5) if n_cols == 0 else n_cols
+        grid = image_to_grid(
+            gen_image.cpu(), mean=mean, std=std, n_cols=n_cols,
+        )
+
+        self.train()
+        return grid
+
+    @torch.no_grad()
+    def interpolate_then_sample(self, batch_size, mean, std, device):
+        self.eval()
+
+        noise1 = self.get_noise(batch_size=batch_size, device=device)
+        noise2 = self.get_noise(batch_size=batch_size, device=device)
+        noise = self.interpolate(
+            batch_size=batch_size, noise1=noise1, noise2=noise2,
+        )
+        gen_image = self(noise.detach())
+        grid = image_to_grid(gen_image.cpu(), mean=mean, std=std, n_cols=10)
+
+        self.train()
+        return grid
 
 
 class StridedConvBlock(nn.Module):

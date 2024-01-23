@@ -1,6 +1,8 @@
 ### Data
 IMG_SIZE = 64
 LATENT_DIM = 100
+MEAN = (0.5, 0.5, 0.5)
+STD = (0.5, 0.5, 0.5)
 
 ### Optimizer
 # "We used the Adam optimizer with tuned hyperparameters. We used 0.0002 for learning rate. We found

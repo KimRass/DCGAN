@@ -7,21 +7,23 @@ from pathlib import Path
 
 
 class CelebADataset(Dataset):
-    def __init__(self, data_dir, img_size):
+    def __init__(self, data_dir, img_size, mean, std):
         super().__init__()
 
         self.img_paths = list(Path(data_dir).glob("**/*.jpg"))
         self.img_size = img_size
 
-        self.transformer = T.Compose([
-            T.Resize(img_size),
-            T.CenterCrop(img_size),
-            T.RandomHorizontalFlip(0.5),
-            T.ToTensor(),
-            # "No pre-processing was applied to training images besides scaling to the range of the tanh
-            # activation function $[-1, 1]$."
-            T.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5)),
-        ])
+        self.transformer = T.Compose(
+            [
+                T.Resize(img_size),
+                T.CenterCrop(img_size),
+                T.RandomHorizontalFlip(0.5),
+                T.ToTensor(),
+                # "No pre-processing was applied to training images besides scaling to the range of the tanh
+                # activation function $[-1, 1]$."
+                T.Normalize(mean=mean, std=std),
+            ]
+        )
 
     def __len__(self):
         return len(self.img_paths)
@@ -32,7 +34,7 @@ class CelebADataset(Dataset):
         return image
 
 
-def get_celeba_dataloader(data_dir, img_size, batch_size, n_workers):
-    ds = CelebADataset(data_dir=data_dir, img_size=img_size)
+def get_celeba_dl(data_dir, img_size, mean, std, batch_size, n_workers):
+    ds = CelebADataset(data_dir=data_dir, img_size=img_size, mean=mean, std=std)
     dl = DataLoader(ds, batch_size=batch_size, shuffle=True, num_workers=n_workers, drop_last=True)
     return dl
