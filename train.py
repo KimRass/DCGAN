@@ -76,7 +76,7 @@ if __name__ == "__main__":
         mean=config.MEAN,
         std=config.STD,
         batch_size=args.BATCH_SIZE,
-        n_workers=args.N_CPUS,
+        n_cpus=args.N_CPUS,
     )
 
     best_loss = math.inf

@@ -34,7 +34,9 @@ class CelebADataset(Dataset):
         return image
 
 
-def get_celeba_dl(data_dir, img_size, mean, std, batch_size, n_workers):
+def get_celeba_dl(data_dir, img_size, mean, std, batch_size, n_cpus):
     ds = CelebADataset(data_dir=data_dir, img_size=img_size, mean=mean, std=std)
-    dl = DataLoader(ds, batch_size=batch_size, shuffle=True, num_workers=n_workers, drop_last=True)
+    dl = DataLoader(
+        ds, batch_size=batch_size, shuffle=True, num_workers=n_cpus, drop_last=True,
+    )
     return dl
