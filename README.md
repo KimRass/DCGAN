@@ -1,4 +1,4 @@
-# 1. Pre-trained Model
+# 1. Pre-trained Model on CelebA 64 × 64
 - [dcgan_celeba.pth](https://drive.google.com/file/d/1dgC2lhIN-Qf_JvN2rz77brHHru13DFNy/view?usp=sharing)
 
 # 2. Sampling
