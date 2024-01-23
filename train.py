@@ -2,7 +2,6 @@
     # https://pytorch.org/tutorials/beginner/dcgan_faces_tutorial.html
 
 import torch
-import torch.nn as nn
 from torch.optim import Adam
 from torch.cuda.amp import GradScaler
 from pathlib import Path
@@ -63,6 +62,8 @@ if __name__ == "__main__":
     DEVICE = get_device()
     gen = Generator().to(DEVICE)
     disc = Discriminator().to(DEVICE)
+    pred = torch.randn(16, 1)
+    print(disc.get_loss(pred, real_or_fake="real").shape)
 
     disc_optim = Adam(params=disc.parameters(), lr=args.DISC_LR, betas=(config.BETA1, config.BETA2))
     gen_optim = Adam(params=gen.parameters(), lr=args.GEN_LR, betas=(config.BETA1, config.BETA2))
@@ -78,8 +79,6 @@ if __name__ == "__main__":
         n_workers=args.N_CPUS,
     )
 
-    crit = nn.BCEWithLogitsLoss()
-
     best_loss = math.inf
     prev_ckpt_path = ".pth"
     for epoch in range(1, args.N_EPOCHS + 1):
@@ -89,14 +88,11 @@ if __name__ == "__main__":
         for step, real_image in enumerate(train_dl, start=1):
             real_image = real_image.to(DEVICE)
 
-            real_label = torch.ones(size=(args.BATCH_SIZE, 1), device=DEVICE)
-            fake_label = torch.zeros(size=(args.BATCH_SIZE, 1), device=DEVICE)
-
             ### Update D.
             with torch.autocast(device_type=DEVICE.type, dtype=torch.float16, enabled=True):
                 real_pred = disc(real_image) # $D(x)$
                  # $\log(D(x))$ # D 입장에서는 Loss가 낮아져야 함.
-                real_disc_loss = crit(real_pred, real_label)
+                real_disc_loss = disc.get_loss(real_pred, real_or_fake="real")
 
                 fake_image = gen.sample(
                     batch_size=args.BATCH_SIZE, mean=config.MEAN, std=config.STD, device=DEVICE,
@@ -105,7 +101,7 @@ if __name__ == "__main__":
                 fake_pred1 = disc(fake_image.detach()) # $D(G(z))$
                 # $\log(1 - D(G(z)))$
                 # # D 입장에서는 Loss가 낮아져야 함.
-                fake_disc_loss = crit(fake_pred1, fake_label)
+                fake_disc_loss = disc.get_loss(fake_pred1, real_or_fake="fake")
 
                 disc_loss = (real_disc_loss + fake_disc_loss) / 2
             disc_optim.zero_grad()
@@ -120,7 +116,7 @@ if __name__ == "__main__":
                     batch_size=args.BATCH_SIZE, mean=config.MEAN, std=config.STD, device=DEVICE,
                 ) # $G(z)$
                 fake_pred2 = disc(fake_image) # $D(G(z))$
-                gen_loss = crit(fake_pred2, real_label) # G 입장에서는 Loss가 낮아져야 함.
+                gen_loss = disc.get_loss(fake_pred2, real_or_fake="real") # G 입장에서는 Loss가 낮아져야 함.
             gen_optim.zero_grad()
             scaler.scale(gen_loss).backward()
             scaler.step(gen_optim)

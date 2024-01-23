@@ -173,6 +173,14 @@ class Discriminator(nn.Module):
         x = self.proj(x)
         return x
 
+    def get_loss(self, pred, real_or_fake):
+        if real_or_fake == "real":
+            gt = torch.ones_like(pred, device=pred.device)
+        elif real_or_fake == "fake":
+           gt = torch.zeros_like(pred, device=pred.device)
+        loss = F.binary_cross_entropy_with_logits(pred, gt, reduction="mean")
+        return loss
+
 
 if __name__ == "__main__":
     x = torch.randn(2, 100)
