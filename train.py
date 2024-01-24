@@ -24,7 +24,7 @@ def get_args(to_upperse=True):
     # All models were trained with mini-batch stochastic gradient descent (SGD) with a mini-batch
     # size of 128."
     parser.add_argument("--batch_size", type=int, required=False, default=128)
-    parser.add_argument("--disc_lr", type=float, required=False, default=0.00014)
+    parser.add_argument("--disc_lr", type=float, required=False, default=0.0002)
     parser.add_argument("--gen_lr", type=float, required=False, default=0.0002)
 
     args = parser.parse_args()
@@ -100,7 +100,7 @@ if __name__ == "__main__":
                 ### DO NOT update G while updating D!
                 fake_pred1 = disc(fake_image.detach()) # $D(G(z))$
                 # $\log(1 - D(G(z)))$
-                # # D 입장에서는 Loss가 낮아져야 함.
+                # D 입장에서는 Loss가 낮아져야 함.
                 fake_disc_loss = disc.get_loss(fake_pred1, real_or_fake="fake")
 
                 disc_loss = (real_disc_loss + fake_disc_loss) / 2
