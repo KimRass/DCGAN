@@ -62,8 +62,6 @@ if __name__ == "__main__":
     DEVICE = get_device()
     gen = Generator().to(DEVICE)
     disc = Discriminator().to(DEVICE)
-    pred = torch.randn(16, 1)
-    print(disc.get_loss(pred, real_or_fake="real").shape)
 
     disc_optim = Adam(params=disc.parameters(), lr=args.DISC_LR, betas=(config.BETA1, config.BETA2))
     gen_optim = Adam(params=gen.parameters(), lr=args.GEN_LR, betas=(config.BETA1, config.BETA2))
